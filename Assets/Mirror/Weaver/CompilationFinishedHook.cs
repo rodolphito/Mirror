@@ -19,12 +19,13 @@ namespace Mirror.Weaver
             // assemblyPath: Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
             CompilationPipeline.assemblyCompilationFinished += (assemblyPath, messages) =>
             {
+                Debug.LogWarning("CompilationFinished @ " + Time.time);
                 // if user scripts can't be compiled because of errors,
                 // assemblyCompilationFinished is still called but assemblyPath
                 // file won't exist. in that case, do nothing.
                 if (!File.Exists(assemblyPath))
                 {
-                    Console.WriteLine("Weaving skipped because assembly doesnt exist: " + assemblyPath);
+                    Debug.LogWarning("Weaving skipped because assembly doesnt exist: " + assemblyPath);
                     return;
                 }
 
@@ -64,7 +65,7 @@ namespace Mirror.Weaver
                     IAssemblyResolver assemblyResolver = new DefaultAssemblyResolver();
                     if (Program.Process(unityEngineCoreModuleDLL, mirrorRuntimeDll, outputDirectory, new string[] { assemblyPath }, GetExtraAssemblyPaths(assemblyPath), assemblyResolver, Debug.LogWarning, Debug.LogError))
                     {
-                        Console.WriteLine("Weaving succeeded for: " + assemblyPath);
+                        Debug.LogWarning("Weaving succeeded for: " + assemblyPath);
                     }
                     else
                     {
