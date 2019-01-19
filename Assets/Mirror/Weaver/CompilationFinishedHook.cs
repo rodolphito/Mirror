@@ -17,6 +17,8 @@ namespace Mirror.Weaver
         {
             Debug.LogWarning("CompilationFinishedHook ctor");
 
+            CompilationPipeline.assemblyCompilationStarted += (s) => { Debug.LogWarning("comp started"); };
+
             // assemblyPath: Library/ScriptAssemblies/Assembly-CSharp.dll/
             // assemblyPath: Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
             CompilationPipeline.assemblyCompilationFinished += (assemblyPath, messages) =>
