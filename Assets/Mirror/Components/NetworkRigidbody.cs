@@ -11,6 +11,8 @@ public class NetworkRigidbody : NetworkBehaviour
         public bool left;
         public bool right;
         public bool jump;
+        public bool TurnLeft;
+        public bool TurnRight;
     }
 
     public struct InputMessage
@@ -79,6 +81,15 @@ public class NetworkRigidbody : NetworkBehaviour
     {
         Rb = GetComponent<Rigidbody>();
         Physics.autoSimulation = false;
+        if (isServerOnly)
+        {
+            smoothed_client_player.SetActive(false);
+        }
+
+        if (isClientOnly)
+        {
+            server_display_player.SetActive(false);
+        }
     }
 
     private void Update()
@@ -112,12 +123,16 @@ public class NetworkRigidbody : NetworkBehaviour
                 uint buffer_slot = client_tick_number % ClientBufferSize;
 
                 // sample and store inputs for this tick
-                Inputs inputs;
-                inputs.up = Input.GetKey(KeyCode.W);
-                inputs.down = Input.GetKey(KeyCode.S);
-                inputs.left = Input.GetKey(KeyCode.A);
-                inputs.right = Input.GetKey(KeyCode.D);
-                inputs.jump = Input.GetKey(KeyCode.Space);
+                Inputs inputs = new Inputs
+                {
+                    up = Input.GetKey(KeyCode.W),
+                    down = Input.GetKey(KeyCode.S),
+                    left = Input.GetKey(KeyCode.A),
+                    right = Input.GetKey(KeyCode.D),
+                    jump = Input.GetKey(KeyCode.Space),
+                    TurnLeft = Input.GetKey(KeyCode.Q),
+                    TurnRight = Input.GetKey(KeyCode.E)
+                };
                 this.ClientInputBuffer[buffer_slot] = inputs;
 
                 // store state for this tick, then use current state + input to step simulation
@@ -277,6 +292,21 @@ public class NetworkRigidbody : NetworkBehaviour
         Rb.AddForce(Force, ForceMode);
     }
 
+    public void AddRelativeNetworkedForce(Vector3 Force, ForceMode Mode)
+    {
+        Rb.AddRelativeForce(Force, Mode);
+    }
+
+    public void AddNetworkedTorque(Vector3 Torque, ForceMode Mode)
+    {
+        Rb.AddTorque(Torque, Mode);
+    }
+
+    public void AddNetworkedRelativeTorque(Vector3 Torque, ForceMode Mode)
+    {
+        Rb.AddRelativeTorque(Torque, Mode);
+    }
+
     [ClientRpc]
     public void RpcSendClientState(StateMessage state_msg)
     {
@@ -312,6 +342,16 @@ public class NetworkRigidbody : NetworkBehaviour
         if (rigidbody.transform.position.y <= this.player_jump_y_threshold && inputs.jump)
         {
             rigidbody.AddForce(transform.up * this.player_movement_impulse, ForceMode.Impulse);
+        }
+
+        if (inputs.TurnLeft)
+        {
+            rigidbody.AddTorque(-transform.right * player_movement_impulse, ForceMode.Impulse);
+        }
+
+        if (inputs.TurnRight)
+        {
+            rigidbody.AddTorque(transform.right * player_movement_impulse, ForceMode.Impulse);
         }
     }
 
