@@ -38,7 +38,6 @@ public class NetworkRigidbody : NetworkBehaviour
 
     #region Shared Fields
 
-    public Transform local_player_camera_transform;
     public float player_movement_impulse;
     public float player_jump_y_threshold;
     private GameObject DisplayPlayer;
@@ -297,28 +296,25 @@ public class NetworkRigidbody : NetworkBehaviour
 
     private void PrePhysicsStep(Rigidbody rigidbody, Inputs inputs)
     {
-        if (this.local_player_camera_transform != null)
+        if (inputs.up)
         {
-            if (inputs.up)
-            {
-                rigidbody.AddForce(this.local_player_camera_transform.forward * this.player_movement_impulse, ForceMode.Impulse);
-            }
-            if (inputs.down)
-            {
-                rigidbody.AddForce(-this.local_player_camera_transform.forward * this.player_movement_impulse, ForceMode.Impulse);
-            }
-            if (inputs.left)
-            {
-                rigidbody.AddForce(-this.local_player_camera_transform.right * this.player_movement_impulse, ForceMode.Impulse);
-            }
-            if (inputs.right)
-            {
-                rigidbody.AddForce(this.local_player_camera_transform.right * this.player_movement_impulse, ForceMode.Impulse);
-            }
-            if (rigidbody.transform.position.y <= this.player_jump_y_threshold && inputs.jump)
-            {
-                rigidbody.AddForce(this.local_player_camera_transform.up * this.player_movement_impulse, ForceMode.Impulse);
-            }
+            rigidbody.AddForce(transform.forward * this.player_movement_impulse, ForceMode.Impulse);
+        }
+        if (inputs.down)
+        {
+            rigidbody.AddForce(-transform.forward * player_movement_impulse, ForceMode.Impulse);
+        }
+        if (inputs.left)
+        {
+            rigidbody.AddForce(-transform.right * this.player_movement_impulse, ForceMode.Impulse);
+        }
+        if (inputs.right)
+        {
+            rigidbody.AddForce(transform.right * this.player_movement_impulse, ForceMode.Impulse);
+        }
+        if (rigidbody.transform.position.y <= this.player_jump_y_threshold && inputs.jump)
+        {
+            rigidbody.AddForce(transform.up * this.player_movement_impulse, ForceMode.Impulse);
         }
     }
 
