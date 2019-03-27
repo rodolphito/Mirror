@@ -40,6 +40,8 @@ public class NetworkRigidbody : NetworkBehaviour
 
     public float player_movement_impulse;
     public float player_jump_y_threshold;
+
+    [SerializeField]
     private GameObject DisplayPlayer;
     public float latency = 0.1f;
 
@@ -78,16 +80,11 @@ public class NetworkRigidbody : NetworkBehaviour
     private void Start()
     {
         Rb = GetComponent<Rigidbody>();
-        DisplayPlayer = gameObject;
+        Physics.autoSimulation = false;
     }
 
     private void Update()
     {
-        // client update
-
-        // enable client player, disable server player
-        //this.server_player.SetActive(false);
-        //this.client_player.SetActive(true);
         float dt = Time.fixedDeltaTime;
 
         if (isClient)
@@ -101,38 +98,41 @@ public class NetworkRigidbody : NetworkBehaviour
             {
                 client_timer -= dt;
 
-                uint buffer_slot = client_tick_number % c_client_buffer_size;
-
-                // sample and store inputs for this tick
-                Inputs inputs;
-                inputs.up = Input.GetKey(KeyCode.W);
-                inputs.down = Input.GetKey(KeyCode.S);
-                inputs.left = Input.GetKey(KeyCode.A);
-                inputs.right = Input.GetKey(KeyCode.D);
-                inputs.jump = Input.GetKey(KeyCode.Space);
-                this.client_input_buffer[buffer_slot] = inputs;
-
-                // store state for this tick, then use current state + input to step simulation
-                this.ClientStoreCurrentStateAndStep(
-                    ref this.client_state_buffer[buffer_slot],
-                    Rb,
-                    inputs,
-                    dt);
-
-                // send input packet to server
-                InputMessage input_msg;
-                input_msg.delivery_time = Time.time + this.latency;
-                input_msg.start_tick_number = this.client_send_redundant_inputs ? this.client_last_received_state_tick : client_tick_number;
-
-                var InputBuffer = new List<Inputs>();
-                for (uint tick = input_msg.start_tick_number; tick <= client_tick_number; ++tick)
+                if (isLocalPlayer)
                 {
-                    InputBuffer.Add(client_input_buffer[tick % c_client_buffer_size]);
-                }
-                input_msg.inputs = InputBuffer.ToArray();
+                    uint buffer_slot = client_tick_number % c_client_buffer_size;
 
-                //this.server_input_msgs.Enqueue(input_msg);
-                CmdSendInputMsg(input_msg);
+                    // sample and store inputs for this tick
+                    Inputs inputs;
+                    inputs.up = Input.GetKey(KeyCode.W);
+                    inputs.down = Input.GetKey(KeyCode.S);
+                    inputs.left = Input.GetKey(KeyCode.A);
+                    inputs.right = Input.GetKey(KeyCode.D);
+                    inputs.jump = Input.GetKey(KeyCode.Space);
+                    this.client_input_buffer[buffer_slot] = inputs;
+
+                    // store state for this tick, then use current state + input to step simulation
+                    this.ClientStoreCurrentStateAndStep(
+                        ref this.client_state_buffer[buffer_slot],
+                        Rb,
+                        inputs,
+                        dt);
+
+                    // send input packet to server
+                    InputMessage input_msg;
+                    input_msg.delivery_time = Time.time;
+                    input_msg.start_tick_number = this.client_send_redundant_inputs ? this.client_last_received_state_tick : client_tick_number;
+
+                    var InputBuffer = new List<Inputs>();
+                    for (uint tick = input_msg.start_tick_number; tick <= client_tick_number; ++tick)
+                    {
+                        InputBuffer.Add(client_input_buffer[tick % c_client_buffer_size]);
+                    }
+                    Debug.Log("Inputs Count: " + InputBuffer.Count);
+                    input_msg.inputs = InputBuffer.ToArray();
+
+                    CmdSendInputMsg(input_msg);
+                }
 
                 ++client_tick_number;
             }
@@ -215,12 +215,6 @@ public class NetworkRigidbody : NetworkBehaviour
             DisplayPlayer.transform.rotation = Rb.rotation * this.client_rot_error;
         }
 
-        // server update
-
-        // enable server player, disable client player
-        //this.client_player.SetActive(false);
-        //this.server_player.SetActive(true);
-
         if (isServer)
         {
             uint server_tick_number = this.server_tick_number;
@@ -254,7 +248,7 @@ public class NetworkRigidbody : NetworkBehaviour
                             server_tick_accumulator = 0;
 
                             StateMessage state_msg;
-                            state_msg.delivery_time = Time.time + this.latency;
+                            state_msg.delivery_time = Time.time;
                             state_msg.tick_number = server_tick_number;
                             state_msg.position = Rb.position;
                             state_msg.rotation = Rb.rotation;
@@ -263,21 +257,12 @@ public class NetworkRigidbody : NetworkBehaviour
                             RpcSendClientState(state_msg);
                         }
                     }
-
-                    DisplayPlayer.transform.position = Rb.position;
-                    DisplayPlayer.transform.rotation = Rb.rotation;
                 }
             }
 
             this.server_tick_number = server_tick_number;
             this.server_tick_accumulator = server_tick_accumulator;
         }
-
-        
-
-        // finally, we're viewing the client, so enable the client player, disable server again
-        //this.server_player.SetActive(false);
-        //this.client_player.SetActive(true);
     }
 
     [ClientRpc]
