@@ -145,7 +145,6 @@ namespace Mirror
                         InputBuffer.Add(ClientForceBuffer[tick % ClientBufferSize]);
                     }
                     input_msg.ForceInputs = InputBuffer.ToArray();
-                    Debug.Log("Inputs count: " + input_msg.ForceInputs.Length);
                     CmdSendInputMsg(input_msg);
                     ForceStateBuffer = default;
                 }
@@ -252,7 +251,7 @@ namespace Mirror
                     for (int i = (int)start_i; i < input_msg.ForceInputs.Length; ++i)
                     {
                         this.PrePhysicsStep(input_msg.ForceInputs[i]);
-                        Physics.Simulate(dt);
+                        NetworkRigidbodyManager.Instance.MarkSimulationDirty();
 
                         ++server_tick_number;
                         ++server_tick_accumulator;
@@ -387,7 +386,7 @@ namespace Mirror
             current_state.rotation = Rb.rotation;
 
             this.PrePhysicsStep(inputs);
-            NetworkRigidbodyManager.Instance.MarkSimulationDirty();
+            Physics.Simulate(dt);
         }
     }
 }
