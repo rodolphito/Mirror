@@ -17,7 +17,7 @@ public class NetworkRigidbody : NetworkBehaviour
 
     public struct InputMessage
     {
-        public float delivery_time;
+        public long delivery_time;
         public uint start_tick_number;
         public Inputs[] inputs;
     }
@@ -30,7 +30,7 @@ public class NetworkRigidbody : NetworkBehaviour
 
     public struct StateMessage
     {
-        public float delivery_time;
+        public long delivery_time;
         public uint tick_number;
         public Vector3 position;
         public Quaternion rotation;
@@ -44,6 +44,9 @@ public class NetworkRigidbody : NetworkBehaviour
     public float player_jump_y_threshold;
     public GameObject smoothed_client_player;
     public GameObject server_display_player;
+
+    [SerializeField]
+    private GameObject PlayerCamera;
 
     private Rigidbody Rb;
 
@@ -89,6 +92,11 @@ public class NetworkRigidbody : NetworkBehaviour
         if (isClientOnly)
         {
             server_display_player.SetActive(false);
+        }
+
+        if (!isLocalPlayer)
+        {
+            PlayerCamera.SetActive(false);
         }
     }
 
@@ -143,7 +151,7 @@ public class NetworkRigidbody : NetworkBehaviour
 
                 // send input packet to server
                 InputMessage input_msg;
-                input_msg.delivery_time = Time.time;
+                input_msg.delivery_time = System.DateTime.Now.ToBinary();
                 input_msg.start_tick_number = this.SendRedundantInputs ? this.ClientLastReceivedStateTick : client_tick_number;
                 var InputBuffer = new List<Inputs>();
 
@@ -239,7 +247,7 @@ public class NetworkRigidbody : NetworkBehaviour
         uint server_tick_number = this.ServerTickNumber;
         uint server_tick_accumulator = this.ServerTickAccumulator;
 
-        while (this.ServerInputMsgs.Count > 0 && Time.time >= this.ServerInputMsgs.Peek().delivery_time)
+        while (this.ServerInputMsgs.Count > 0 && System.DateTime.Now.ToBinary() >= this.ServerInputMsgs.Peek().delivery_time)
         {
             InputMessage input_msg = this.ServerInputMsgs.Dequeue();
 
@@ -267,7 +275,7 @@ public class NetworkRigidbody : NetworkBehaviour
                         server_tick_accumulator = 0;
 
                         StateMessage state_msg;
-                        state_msg.delivery_time = Time.time;
+                        state_msg.delivery_time = System.DateTime.Now.ToBinary();
                         state_msg.tick_number = server_tick_number;
                         state_msg.position = Rb.position;
                         state_msg.rotation = Rb.rotation;
@@ -357,7 +365,7 @@ public class NetworkRigidbody : NetworkBehaviour
 
     private bool ClientHasStateMessage()
     {
-        return this.ClientStateMessages.Count > 0 && Time.time >= this.ClientStateMessages.Peek().delivery_time;
+        return this.ClientStateMessages.Count > 0 && System.DateTime.Now.ToBinary() >= this.ClientStateMessages.Peek().delivery_time;
     }
 
     private void ClientStoreCurrentStateAndStep(ref ClientState current_state, Inputs inputs, float dt)
