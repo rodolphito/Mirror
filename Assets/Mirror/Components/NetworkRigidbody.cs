@@ -40,10 +40,8 @@ public class NetworkRigidbody : NetworkBehaviour
 
     public float player_movement_impulse;
     public float player_jump_y_threshold;
-
-    [SerializeField]
-    private GameObject DisplayPlayer;
-    public float latency = 0.1f;
+    public GameObject smoothed_client_player;
+    public GameObject server_display_player;
 
     private Rigidbody Rb;
 
@@ -87,8 +85,15 @@ public class NetworkRigidbody : NetworkBehaviour
     {
         float dt = Time.fixedDeltaTime;
 
-        ClientUpdate(dt);
-        ServerUpdate(dt);
+        if (isClient)
+        {
+            ClientUpdate(dt);
+        }
+
+        if (isServer)
+        {
+            ServerUpdate(dt);
+        }
     }
 
     [Client]
@@ -118,7 +123,6 @@ public class NetworkRigidbody : NetworkBehaviour
                 // store state for this tick, then use current state + input to step simulation
                 this.ClientStoreCurrentStateAndStep(
                     ref this.ClientStateBuffer[buffer_slot],
-                    Rb,
                     inputs,
                     dt);
 
@@ -126,16 +130,14 @@ public class NetworkRigidbody : NetworkBehaviour
                 InputMessage input_msg;
                 input_msg.delivery_time = Time.time;
                 input_msg.start_tick_number = this.SendRedundantInputs ? this.ClientLastReceivedStateTick : client_tick_number;
-
                 var InputBuffer = new List<Inputs>();
+
                 for (uint tick = input_msg.start_tick_number; tick <= client_tick_number; ++tick)
                 {
-                    Debug.Log("Process tick: " + tick);
                     InputBuffer.Add(ClientInputBuffer[tick % ClientBufferSize]);
                 }
-                Debug.Log("Inputs Count: " + InputBuffer.Count);
                 input_msg.inputs = InputBuffer.ToArray();
-
+                Debug.Log("Inputs count: " + input_msg.inputs.Length);
                 CmdSendInputMsg(input_msg);
             }
 
@@ -151,9 +153,6 @@ public class NetworkRigidbody : NetworkBehaviour
             }
 
             this.ClientLastReceivedStateTick = state_msg.tick_number;
-
-            DisplayPlayer.transform.position = state_msg.position;
-            DisplayPlayer.transform.rotation = state_msg.rotation;
 
             if (this.EnableClientCorrections)
             {
@@ -180,7 +179,6 @@ public class NetworkRigidbody : NetworkBehaviour
                         buffer_slot = rewind_tick_number % ClientBufferSize;
                         this.ClientStoreCurrentStateAndStep(
                             ref this.ClientStateBuffer[buffer_slot],
-                            Rb,
                             this.ClientInputBuffer[buffer_slot],
                             dt);
 
@@ -216,8 +214,8 @@ public class NetworkRigidbody : NetworkBehaviour
             this.ClientRotError = Quaternion.identity;
         }
 
-        DisplayPlayer.transform.position = Rb.position + this.ClientPosError;
-        DisplayPlayer.transform.rotation = Rb.rotation * this.ClientRotError;
+        this.smoothed_client_player.transform.position = Rb.position + this.ClientPosError;
+        this.smoothed_client_player.transform.rotation = Rb.rotation * this.ClientRotError;
     }
 
     [Server]
@@ -263,6 +261,9 @@ public class NetworkRigidbody : NetworkBehaviour
                         RpcSendClientState(state_msg);
                     }
                 }
+
+                this.server_display_player.transform.position = Rb.position;
+                this.server_display_player.transform.rotation = Rb.rotation;
             }
         }
 
@@ -270,7 +271,8 @@ public class NetworkRigidbody : NetworkBehaviour
         this.ServerTickAccumulator = server_tick_accumulator;
     }
 
-    public void AddForce(Vector3 Force, ForceMode ForceMode)
+    // exploratory/unfinished
+    public void AddNetworkedForce(Vector3 Force, ForceMode ForceMode)
     {
         Rb.AddForce(Force, ForceMode);
     }
@@ -318,12 +320,12 @@ public class NetworkRigidbody : NetworkBehaviour
         return this.ClientStateMessages.Count > 0 && Time.time >= this.ClientStateMessages.Peek().delivery_time;
     }
 
-    private void ClientStoreCurrentStateAndStep(ref ClientState current_state, Rigidbody rigidbody, Inputs inputs, float dt)
+    private void ClientStoreCurrentStateAndStep(ref ClientState current_state, Inputs inputs, float dt)
     {
-        current_state.position = rigidbody.position;
-        current_state.rotation = rigidbody.rotation;
+        current_state.position = Rb.position;
+        current_state.rotation = Rb.rotation;
 
-        this.PrePhysicsStep(rigidbody, inputs);
+        this.PrePhysicsStep(Rb, inputs);
         Physics.Simulate(dt);
     }
 }
