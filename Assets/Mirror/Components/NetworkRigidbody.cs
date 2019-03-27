@@ -346,12 +346,12 @@ public class NetworkRigidbody : NetworkBehaviour
 
         if (inputs.TurnLeft)
         {
-            rigidbody.AddTorque(-transform.right * player_movement_impulse, ForceMode.Impulse);
+            rigidbody.AddTorque(-transform.up * 0.05f, ForceMode.Impulse);
         }
 
         if (inputs.TurnRight)
         {
-            rigidbody.AddTorque(transform.right * player_movement_impulse, ForceMode.Impulse);
+            rigidbody.AddTorque(transform.up * 0.05f, ForceMode.Impulse);
         }
     }
 
