@@ -56,6 +56,7 @@ namespace Mirror
         public bool EnableClientCorrectionSmoothing = true;
         public bool SendRedundantInputs = true;
         private float ClientTimer = 0;
+        private uint ClientTickNumber = 0;
         private uint ClientLastReceivedStateTick = 0;
         private const int ClientBufferSize = 1024;
         private ClientState[] ClientStateBuffer = new ClientState[ClientBufferSize]; // client stores predicted moves here
@@ -73,6 +74,7 @@ namespace Mirror
         #region Server Fields
 
         public uint ServerSnapshotRate;
+        private uint ServerTickNumber = 0;
         private uint ServerTickAccumulator = 0;
         private Queue<InputMessage> ServerInputMsgs = new Queue<InputMessage>();
 
@@ -109,32 +111,11 @@ namespace Mirror
             }
         }
 
-        internal void SendInputs(uint ClientTickNumber)
-        {
-            if (isLocalPlayer || hasAuthority)
-            {
-                // send input packet to server
-                InputMessage input_msg;
-                input_msg.delivery_time = System.DateTime.Now.ToBinary();
-                input_msg.start_tick_number = this.SendRedundantInputs ? this.ClientLastReceivedStateTick : ClientTickNumber;
-                var InputBuffer = new List<ForceStateInput>();
-
-                for (uint tick = input_msg.start_tick_number; tick <= ClientTickNumber; ++tick)
-                {
-                    InputBuffer.Add(ClientForceBuffer[tick % ClientBufferSize]);
-                }
-                Debug.Log("Inputs count: " + InputBuffer.Count);
-                input_msg.ForceInputs = InputBuffer.ToArray();
-                CmdSendInputMsg(input_msg);
-                ForceStateBuffer = default;
-            }
-        }
-
         [Client]
         private void ClientUpdate(float dt)
         {
             float client_timer = this.ClientTimer;
-            uint client_tick_number = NetworkRigidbodyManager.Instance.TickNumber;
+            uint client_tick_number = this.ClientTickNumber;
 
             client_timer += Time.deltaTime;
             while (client_timer >= dt)
@@ -151,9 +132,21 @@ namespace Mirror
                     this.ClientStoreCurrentStateAndStep(
                         ref this.ClientStateBuffer[buffer_slot],
                         ForceStateBuffer,
-                        client_tick_number);
+                        dt);
 
-                    
+                    // send input packet to server
+                    InputMessage input_msg;
+                    input_msg.delivery_time = System.DateTime.Now.ToBinary();
+                    input_msg.start_tick_number = this.SendRedundantInputs ? this.ClientLastReceivedStateTick : client_tick_number;
+                    var InputBuffer = new List<ForceStateInput>();
+
+                    for (uint tick = input_msg.start_tick_number; tick <= client_tick_number; ++tick)
+                    {
+                        InputBuffer.Add(ClientForceBuffer[tick % ClientBufferSize]);
+                    }
+                    input_msg.ForceInputs = InputBuffer.ToArray();
+                    CmdSendInputMsg(input_msg);
+                    ForceStateBuffer = default;
                 }
 
                 ++client_tick_number;
@@ -195,7 +188,7 @@ namespace Mirror
                             this.ClientStoreCurrentStateAndStep(
                                 ref this.ClientStateBuffer[buffer_slot],
                                 this.ClientForceBuffer[buffer_slot],
-                                rewind_tick_number);
+                                dt);
 
                             ++rewind_tick_number;
                         }
@@ -216,7 +209,7 @@ namespace Mirror
             }
 
             this.ClientTimer = client_timer;
-            NetworkRigidbodyManager.Instance.TickNumber = client_tick_number;
+            this.ClientTickNumber = client_tick_number;
 
             if (this.EnableClientCorrectionSmoothing)
             {
@@ -236,7 +229,7 @@ namespace Mirror
         [Server]
         private void ServerUpdate(float dt)
         {
-            uint server_tick_number = NetworkRigidbodyManager.Instance.TickNumber;
+            uint server_tick_number = this.ServerTickNumber;
             uint server_tick_accumulator = this.ServerTickAccumulator;
 
             while (this.ServerInputMsgs.Count > 0 && System.DateTime.Now.ToBinary() >= this.ServerInputMsgs.Peek().delivery_time)
@@ -258,10 +251,23 @@ namespace Mirror
                     for (int i = (int)start_i; i < input_msg.ForceInputs.Length; ++i)
                     {
                         this.PrePhysicsStep(input_msg.ForceInputs[i]);
-                        NetworkRigidbodyManager.Instance.IncrementServerTick(this, server_tick_number);
+                        NetworkRigidbodyManager.Instance.MarkSimulationDirty();
 
                         ++server_tick_number;
                         ++server_tick_accumulator;
+                        if (server_tick_accumulator >= this.ServerSnapshotRate)
+                        {
+                            server_tick_accumulator = 0;
+
+                            StateMessage state_msg;
+                            state_msg.delivery_time = System.DateTime.Now.ToBinary();
+                            state_msg.tick_number = server_tick_number;
+                            state_msg.position = Rb.position;
+                            state_msg.rotation = Rb.rotation;
+                            state_msg.velocity = Rb.velocity;
+                            state_msg.angular_velocity = Rb.angularVelocity;
+                            RpcSendClientState(state_msg);
+                        }
                     }
 
                     this.server_display_player.transform.position = Rb.position;
@@ -269,27 +275,11 @@ namespace Mirror
                 }
             }
 
-            NetworkRigidbodyManager.Instance.TickNumber = server_tick_number;
+            this.ServerTickNumber = server_tick_number;
             this.ServerTickAccumulator = server_tick_accumulator;
         }
 
-        internal void SendServerState(uint TickNumber)
-        {
-            if (ServerTickAccumulator >= this.ServerSnapshotRate)
-            {
-                ServerTickAccumulator = 0;
-
-                StateMessage state_msg;
-                state_msg.delivery_time = System.DateTime.Now.ToBinary();
-                state_msg.tick_number = TickNumber;
-                state_msg.position = Rb.position;
-                state_msg.rotation = Rb.rotation;
-                state_msg.velocity = Rb.velocity;
-                state_msg.angular_velocity = Rb.angularVelocity;
-                RpcSendClientState(state_msg);
-            }
-        }
-
+        // exploratory/unfinished
         public void AddNetworkedForce(Vector3 Force, ForceMode Mode)
         {
             if (hasAuthority || isLocalPlayer)
@@ -390,13 +380,13 @@ namespace Mirror
             return this.ClientStateMessages.Count > 0 && System.DateTime.Now.ToBinary() >= this.ClientStateMessages.Peek().delivery_time;
         }
 
-        private void ClientStoreCurrentStateAndStep(ref ClientState current_state, ForceStateInput inputs, uint SimulationTickRequested)
+        private void ClientStoreCurrentStateAndStep(ref ClientState current_state, ForceStateInput inputs, float dt)
         {
             current_state.position = Rb.position;
             current_state.rotation = Rb.rotation;
 
             this.PrePhysicsStep(inputs);
-            NetworkRigidbodyManager.Instance.IncrementClientTick(this, SimulationTickRequested);
+            Physics.Simulate(dt);
         }
     }
 }
