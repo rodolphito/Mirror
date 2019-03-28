@@ -251,7 +251,7 @@ namespace Mirror
                     for (int i = (int)start_i; i < input_msg.ForceInputs.Length; ++i)
                     {
                         this.PrePhysicsStep(input_msg.ForceInputs[i]);
-                        NetworkRigidbodyManager.Instance.MarkSimulationDirty();
+                        NetworkRigidbodyManager.Instance.IncrementTick(Time.time);
 
                         ++server_tick_number;
                         ++server_tick_accumulator;
@@ -279,7 +279,6 @@ namespace Mirror
             this.ServerTickAccumulator = server_tick_accumulator;
         }
 
-        // exploratory/unfinished
         public void AddNetworkedForce(Vector3 Force, ForceMode Mode)
         {
             if (hasAuthority || isLocalPlayer)
@@ -386,7 +385,7 @@ namespace Mirror
             current_state.rotation = Rb.rotation;
 
             this.PrePhysicsStep(inputs);
-            Physics.Simulate(dt);
+            NetworkRigidbodyManager.Instance.IncrementTick(Time.time);
         }
     }
 }
