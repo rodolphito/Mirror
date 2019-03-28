@@ -76,7 +76,7 @@ namespace Mirror
         public uint ServerSnapshotRate;
         private uint ServerTickNumber = 0;
         private uint ServerTickAccumulator = 0;
-        private Queue<InputMessage> ServerInputMsgs = new Queue<InputMessage>();
+        private Queue<ForceStateInput> ServerInputMsgs = new Queue<ForceStateInput>();
 
         #endregion
 
@@ -229,53 +229,31 @@ namespace Mirror
         [Server]
         private void ServerUpdate(float dt)
         {
-            uint server_tick_number = this.ServerTickNumber;
             uint server_tick_accumulator = this.ServerTickAccumulator;
 
-            while (this.ServerInputMsgs.Count > 0 && System.DateTime.Now.ToBinary() >= this.ServerInputMsgs.Peek().delivery_time)
+            while (this.ServerInputMsgs.Count > 0)
             {
-                InputMessage input_msg = this.ServerInputMsgs.Dequeue();
+                ForceStateInput input_msg = this.ServerInputMsgs.Dequeue();
+                uint inputBacklog = (uint) this.ServerInputMsgs.Count;
 
-                // message contains an array of inputs, calculate what tick the final one is
-                uint max_tick = input_msg.start_tick_number + (uint)input_msg.ForceInputs.Length - 1;
+                this.PrePhysicsStep(input_msg);
+                NetworkRigidbodyManager.Instance.MarkSimulationDirty();
 
-                // if that tick is greater than or equal to the current tick we're on, then it
-                // has inputs which are new
-                if (max_tick >= server_tick_number)
+                ++server_tick_accumulator;
+                if (server_tick_accumulator >= this.ServerSnapshotRate)
                 {
-                    // there may be some inputs in the array that we've already had,
-                    // so figure out where to start
-                    uint start_i = server_tick_number > input_msg.start_tick_number ? (server_tick_number - input_msg.start_tick_number) : 0;
+                    server_tick_accumulator = 0;
 
-                    // run through all relevant inputs, and step player forward
-                    for (int i = (int)start_i; i < input_msg.ForceInputs.Length; ++i)
-                    {
-                        this.PrePhysicsStep(input_msg.ForceInputs[i]);
-                        NetworkRigidbodyManager.Instance.MarkSimulationDirty();
-
-                        ++server_tick_number;
-                        ++server_tick_accumulator;
-                        if (server_tick_accumulator >= this.ServerSnapshotRate)
-                        {
-                            server_tick_accumulator = 0;
-
-                            StateMessage state_msg;
-                            state_msg.delivery_time = System.DateTime.Now.ToBinary();
-                            state_msg.tick_number = server_tick_number;
-                            state_msg.position = Rb.position;
-                            state_msg.rotation = Rb.rotation;
-                            state_msg.velocity = Rb.velocity;
-                            state_msg.angular_velocity = Rb.angularVelocity;
-                            RpcSendClientState(state_msg);
-                        }
-                    }
-
-                    this.server_display_player.transform.position = Rb.position;
-                    this.server_display_player.transform.rotation = Rb.rotation;
+                    StateMessage state_msg;
+                    state_msg.delivery_time = System.DateTime.Now.ToBinary();
+                    state_msg.tick_number = ServerTickNumber - inputBacklog;
+                    state_msg.position = Rb.position;
+                    state_msg.rotation = Rb.rotation;
+                    state_msg.velocity = Rb.velocity;
+                    state_msg.angular_velocity = Rb.angularVelocity;
+                    RpcSendClientState(state_msg);
                 }
             }
-
-            this.ServerTickNumber = server_tick_number;
             this.ServerTickAccumulator = server_tick_accumulator;
         }
 
@@ -341,7 +319,31 @@ namespace Mirror
         [Command]
         public void CmdSendInputMsg(InputMessage input_msg)
         {
-            ServerInputMsgs.Enqueue(input_msg);
+            uint server_tick_number = this.ServerTickNumber;
+
+            // message contains an array of inputs, calculate what tick the final one is
+            uint max_tick = input_msg.start_tick_number + (uint)input_msg.ForceInputs.Length - 1;
+
+            // if that tick is greater than or equal to the current tick we're on, then it
+            // has inputs which are new
+            if (max_tick >= server_tick_number)
+            {
+                // there may be some inputs in the array that we've already had,
+                // so figure out where to start
+                uint start_i = server_tick_number > input_msg.start_tick_number ? (server_tick_number - input_msg.start_tick_number) : 0;
+
+                // run through all relevant inputs, and step player forward
+                for (int i = (int)start_i; i < input_msg.ForceInputs.Length; ++i)
+                {
+                    ++server_tick_number;
+                    ServerInputMsgs.Enqueue(input_msg.ForceInputs[i]);
+                }
+
+                this.server_display_player.transform.position = Rb.position;
+                this.server_display_player.transform.rotation = Rb.rotation;
+            }
+
+            this.ServerTickNumber = server_tick_number;
         }
 
         #endregion
