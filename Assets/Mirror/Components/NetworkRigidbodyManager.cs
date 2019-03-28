@@ -65,6 +65,7 @@ namespace Mirror
                     }
                     TickNumber++;
                 }
+                DirtyClientTicksToSimulate.Clear();
 
                 foreach (var item in DirtyServerTicksToSimulate)
                 {
@@ -75,6 +76,7 @@ namespace Mirror
                     }
                     TickNumber++;
                 }
+                DirtyServerTicksToSimulate.Clear();
 
                 TicksToSimulate = 0;
                 SimulationIsDirty = false;
