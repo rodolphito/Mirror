@@ -229,32 +229,39 @@ namespace Mirror
         [Server]
         private void ServerUpdate(float dt)
         {
-            uint server_tick_accumulator = this.ServerTickAccumulator;
-
             while (this.ServerInputMsgs.Count > 0)
             {
-                ForceStateInput input_msg = this.ServerInputMsgs.Dequeue();
-                uint inputBacklog = (uint) this.ServerInputMsgs.Count;
+                ServerPreUpdate();
 
-                this.PrePhysicsStep(input_msg);
                 NetworkRigidbodyManager.Instance.MarkSimulationDirty();
 
-                ++server_tick_accumulator;
-                if (server_tick_accumulator >= this.ServerSnapshotRate)
-                {
-                    server_tick_accumulator = 0;
-
-                    StateMessage state_msg;
-                    state_msg.delivery_time = System.DateTime.Now.ToBinary();
-                    state_msg.tick_number = ServerTickNumber - inputBacklog;
-                    state_msg.position = Rb.position;
-                    state_msg.rotation = Rb.rotation;
-                    state_msg.velocity = Rb.velocity;
-                    state_msg.angular_velocity = Rb.angularVelocity;
-                    RpcSendClientState(state_msg);
-                }
+                ServerPostUpdate();
             }
-            this.ServerTickAccumulator = server_tick_accumulator;
+        }
+
+        [Server]
+        internal void ServerPreUpdate()
+        {
+            this.PrePhysicsStep(this.ServerInputMsgs.Dequeue());
+        }
+
+        [Server]
+        internal void ServerPostUpdate()
+        {
+            ++this.ServerTickAccumulator;
+            if (this.ServerTickAccumulator >= this.ServerSnapshotRate)
+            {
+                this.ServerTickAccumulator = 0;
+
+                StateMessage state_msg;
+                state_msg.delivery_time = System.DateTime.Now.ToBinary();
+                state_msg.tick_number = ServerTickNumber - (uint) this.ServerInputMsgs.Count;
+                state_msg.position = Rb.position;
+                state_msg.rotation = Rb.rotation;
+                state_msg.velocity = Rb.velocity;
+                state_msg.angular_velocity = Rb.angularVelocity;
+                RpcSendClientState(state_msg);
+            }
         }
 
         // exploratory/unfinished
