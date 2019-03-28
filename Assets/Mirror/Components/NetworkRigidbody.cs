@@ -56,7 +56,6 @@ namespace Mirror
         public bool EnableClientCorrectionSmoothing = true;
         public bool SendRedundantInputs = true;
         private float ClientTimer = 0;
-        private uint ClientTickNumber = 0;
         private uint ClientLastReceivedStateTick = 0;
         private const int ClientBufferSize = 1024;
         private ClientState[] ClientStateBuffer = new ClientState[ClientBufferSize]; // client stores predicted moves here
@@ -74,7 +73,6 @@ namespace Mirror
         #region Server Fields
 
         public uint ServerSnapshotRate;
-        private uint ServerTickNumber = 0;
         private uint ServerTickAccumulator = 0;
         private Queue<InputMessage> ServerInputMsgs = new Queue<InputMessage>();
 
@@ -125,6 +123,7 @@ namespace Mirror
                 {
                     InputBuffer.Add(ClientForceBuffer[tick % ClientBufferSize]);
                 }
+                Debug.Log("Inputs count: " + InputBuffer.Count);
                 input_msg.ForceInputs = InputBuffer.ToArray();
                 CmdSendInputMsg(input_msg);
                 ForceStateBuffer = default;
@@ -217,7 +216,7 @@ namespace Mirror
             }
 
             this.ClientTimer = client_timer;
-            this.ClientTickNumber = client_tick_number;
+            NetworkRigidbodyManager.Instance.TickNumber = client_tick_number;
 
             if (this.EnableClientCorrectionSmoothing)
             {
@@ -237,7 +236,7 @@ namespace Mirror
         [Server]
         private void ServerUpdate(float dt)
         {
-            uint server_tick_number = this.ServerTickNumber;
+            uint server_tick_number = NetworkRigidbodyManager.Instance.TickNumber;
             uint server_tick_accumulator = this.ServerTickAccumulator;
 
             while (this.ServerInputMsgs.Count > 0 && System.DateTime.Now.ToBinary() >= this.ServerInputMsgs.Peek().delivery_time)
@@ -270,7 +269,7 @@ namespace Mirror
                 }
             }
 
-            this.ServerTickNumber = server_tick_number;
+            NetworkRigidbodyManager.Instance.TickNumber = server_tick_number;
             this.ServerTickAccumulator = server_tick_accumulator;
         }
 

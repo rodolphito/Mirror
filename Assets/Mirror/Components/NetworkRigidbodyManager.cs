@@ -59,6 +59,7 @@ namespace Mirror
                 foreach (var item in DirtyClientTicksToSimulate)
                 {
                     Physics.Simulate(dt);
+                    Debug.Log("Asked to simulate tick");
                     foreach (var item2 in item.Value)
                     {
                         item2.SendInputs(item.Key);
@@ -70,6 +71,7 @@ namespace Mirror
                 foreach (var item in DirtyServerTicksToSimulate)
                 {
                     Physics.Simulate(dt);
+                    Debug.Log("Asked to simulate tick");
                     foreach (var item2 in item.Value)
                     {
                         item2.SendServerState(item.Key);
