@@ -76,7 +76,7 @@ namespace Mirror
         public uint ServerSnapshotRate;
         private uint ServerTickNumber = 0;
         private uint ServerTickAccumulator = 0;
-        private Queue<ForceStateInput> ServerInputMsgs = new Queue<ForceStateInput>();
+        internal Queue<ForceStateInput> ServerInputMsgs = new Queue<ForceStateInput>();
 
         #endregion
 
@@ -229,13 +229,9 @@ namespace Mirror
         [Server]
         private void ServerUpdate(float dt)
         {
-            while (this.ServerInputMsgs.Count > 0)
+            if (ServerInputMsgs.Count > 0)
             {
-                ServerPreUpdate();
-
-                NetworkRigidbodyManager.Instance.MarkSimulationDirty();
-
-                ServerPostUpdate();
+                NetworkRigidbodyManager.Instance.ServerRigidbodyHasMessages(this);
             }
         }
 

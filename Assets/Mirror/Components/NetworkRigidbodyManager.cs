@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections.Generic;
 
 namespace Mirror
 {
@@ -16,9 +16,7 @@ namespace Mirror
         internal uint TickNumber = 0;
         private int TicksToSimulate = 0;
 
-        private Dictionary<uint, List<NetworkRigidbody>> DirtyClientTicksToSimulate = new Dictionary<uint, List<NetworkRigidbody>>();
-
-        private Dictionary<uint, List<NetworkRigidbody>> DirtyServerTicksToSimulate = new Dictionary<uint, List<NetworkRigidbody>>();
+        private List<NetworkRigidbody> ServerRigidbodiesWithMessages = new List<NetworkRigidbody>();
 
         void Start()
         {
@@ -51,13 +49,34 @@ namespace Mirror
             float dt = Time.fixedDeltaTime;
             if (SimulationIsDirty)
             {
-                Physics.Simulate(dt);
+                if (ServerRigidbodiesWithMessages.Count > 0)
+                {
+                    foreach (var ServerRb in ServerRigidbodiesWithMessages)
+                    {
+                        while (ServerRb.ServerInputMsgs.Count > 0)
+                        {
+                            ServerRb.ServerPreUpdate();
+                        }
+                    }
+                    Physics.Simulate(dt);
+                    foreach (var ServerRb in ServerRigidbodiesWithMessages)
+                    {
+                        ServerRb.ServerPostUpdate();
+                    }
+                    ServerRigidbodiesWithMessages.Clear();
+                }
                 SimulationIsDirty = false;
             }
         }
 
         internal void MarkSimulationDirty()
         {
+            SimulationIsDirty = true;
+        }
+
+        internal void ServerRigidbodyHasMessages(NetworkRigidbody networkRigidbody)
+        {
+            ServerRigidbodiesWithMessages.Add(networkRigidbody);
             SimulationIsDirty = true;
         }
     }
