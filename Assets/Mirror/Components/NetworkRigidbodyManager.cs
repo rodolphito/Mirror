@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -12,7 +13,12 @@ namespace Mirror
 
         private bool SimulationIsDirty = false;
 
+        internal uint TickNumber = 0;
         private int TicksToSimulate = 0;
+
+        private Dictionary<uint, List<NetworkRigidbody>> DirtyClientTicksToSimulate = new Dictionary<uint, List<NetworkRigidbody>>();
+
+        private Dictionary<uint, List<NetworkRigidbody>> DirtyServerTicksToSimulate = new Dictionary<uint, List<NetworkRigidbody>>();
 
         void Start()
         {
@@ -45,10 +51,31 @@ namespace Mirror
             float dt = Time.fixedDeltaTime;
             if (SimulationIsDirty)
             {
-                for (int i = 0; i < TicksToSimulate; i++)
+                //for (int i = 0; i < TicksToSimulate; i++)
+                //{
+                //    Physics.Simulate(dt);
+                //}
+
+                foreach (var item in DirtyClientTicksToSimulate)
                 {
                     Physics.Simulate(dt);
+                    foreach (var item2 in item.Value)
+                    {
+                        item2.SendInputs(item.Key);
+                    }
+                    TickNumber++;
                 }
+
+                foreach (var item in DirtyServerTicksToSimulate)
+                {
+                    Physics.Simulate(dt);
+                    foreach (var item2 in item.Value)
+                    {
+                        item2.SendServerState(item.Key);
+                    }
+                    TickNumber++;
+                }
+
                 TicksToSimulate = 0;
                 SimulationIsDirty = false;
             }
@@ -59,8 +86,30 @@ namespace Mirror
             SimulationIsDirty = true;
         }
 
-        internal void IncrementTick(float Time)
+        internal void IncrementClientTick(NetworkRigidbody DirtyClientRb, uint TickRequested)
         {
+            if (DirtyClientTicksToSimulate.ContainsKey(TickRequested))
+            {
+                DirtyClientTicksToSimulate[TickRequested].Add(DirtyClientRb);
+            }
+            else
+            {
+                DirtyClientTicksToSimulate[TickRequested] = new List<NetworkRigidbody> { DirtyClientRb };
+            }
+            TicksToSimulate++;
+            SimulationIsDirty = true;
+        }
+
+        internal void IncrementServerTick(NetworkRigidbody DirtyServerRb, uint TickRequested)
+        {
+            if (DirtyServerTicksToSimulate.ContainsKey(TickRequested))
+            {
+                DirtyServerTicksToSimulate[TickRequested].Add(DirtyServerRb);
+            }
+            else
+            {
+                DirtyServerTicksToSimulate[TickRequested] = new List<NetworkRigidbody> { DirtyServerRb };
+            }
             TicksToSimulate++;
             SimulationIsDirty = true;
         }
