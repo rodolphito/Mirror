@@ -77,6 +77,8 @@ namespace Mirror
         private uint ServerTickNumber = 0;
         private uint ServerTickAccumulator = 0;
         internal Queue<ForceStateInput> ServerInputMsgs = new Queue<ForceStateInput>();
+        private Vector3 prev_pos;
+        private Quaternion prev_rot;
 
         #endregion
 
@@ -111,105 +113,27 @@ namespace Mirror
             }
         }
 
-        [Client]
-        private void ClientUpdate(float dt)
+        private void LateUpdate()
         {
-            float client_timer = this.ClientTimer;
-            uint client_tick_number = this.ClientTickNumber;
+            ProcessMessagePostPhysics();
+        }
 
-            client_timer += Time.deltaTime;
-            while (client_timer >= dt)
+        private void ProcessMessagePostPhysics()
+        {
+            if (EnableClientCorrections)
             {
-                client_timer -= dt;
-
-                if (isLocalPlayer)
+                // if more than 2ms apart, just snap
+                if ((prev_pos - Rb.position).sqrMagnitude >= 4.0f)
                 {
-                    uint buffer_slot = client_tick_number % ClientBufferSize;
-
-                    this.ClientForceBuffer[buffer_slot] = ForceStateBuffer;
-
-                    // store state for this tick, then use current state + input to step simulation
-                    this.ClientStoreCurrentStateAndStep(
-                        ref this.ClientStateBuffer[buffer_slot],
-                        ForceStateBuffer,
-                        dt);
-
-                    // send input packet to server
-                    InputMessage input_msg;
-                    input_msg.delivery_time = System.DateTime.Now.ToBinary();
-                    input_msg.start_tick_number = this.SendRedundantInputs ? this.ClientLastReceivedStateTick : client_tick_number;
-                    var InputBuffer = new List<ForceStateInput>();
-
-                    for (uint tick = input_msg.start_tick_number; tick <= client_tick_number; ++tick)
-                    {
-                        InputBuffer.Add(ClientForceBuffer[tick % ClientBufferSize]);
-                    }
-                    input_msg.ForceInputs = InputBuffer.ToArray();
-                    CmdSendInputMsg(input_msg);
-                    ForceStateBuffer = default;
+                    this.ClientPosError = Vector3.zero;
+                    this.ClientRotError = Quaternion.identity;
                 }
-
-                ++client_tick_number;
-            }
-
-            if (this.ClientHasStateMessage())
-            {
-                StateMessage state_msg = this.ClientStateMessages.Dequeue();
-                while (this.ClientHasStateMessage()) // make sure if there are any newer state messages available, we use those instead
+                else
                 {
-                    state_msg = this.ClientStateMessages.Dequeue();
-                }
-
-                this.ClientLastReceivedStateTick = state_msg.tick_number;
-
-                if (this.EnableClientCorrections)
-                {
-                    uint buffer_slot = state_msg.tick_number % ClientBufferSize;
-                    Vector3 position_error = state_msg.position - this.ClientStateBuffer[buffer_slot].position;
-                    float rotation_error = 1.0f - Quaternion.Dot(state_msg.rotation, this.ClientStateBuffer[buffer_slot].rotation);
-
-                    if (position_error.sqrMagnitude > 0.0000001f ||
-                        rotation_error > 0.00001f)
-                    {
-                        // capture the current predicted pos for smoothing
-                        Vector3 prev_pos = Rb.position + this.ClientPosError;
-                        Quaternion prev_rot = Rb.rotation * this.ClientRotError;
-
-                        // rewind & replay
-                        Rb.position = state_msg.position;
-                        Rb.rotation = state_msg.rotation;
-                        Rb.velocity = state_msg.velocity;
-                        Rb.angularVelocity = state_msg.angular_velocity;
-
-                        uint rewind_tick_number = state_msg.tick_number;
-                        while (rewind_tick_number < client_tick_number)
-                        {
-                            buffer_slot = rewind_tick_number % ClientBufferSize;
-                            this.ClientStoreCurrentStateAndStep(
-                                ref this.ClientStateBuffer[buffer_slot],
-                                this.ClientForceBuffer[buffer_slot],
-                                dt);
-
-                            ++rewind_tick_number;
-                        }
-
-                        // if more than 2ms apart, just snap
-                        if ((prev_pos - Rb.position).sqrMagnitude >= 4.0f)
-                        {
-                            this.ClientPosError = Vector3.zero;
-                            this.ClientRotError = Quaternion.identity;
-                        }
-                        else
-                        {
-                            this.ClientPosError = prev_pos - Rb.position;
-                            this.ClientRotError = Quaternion.Inverse(Rb.rotation) * prev_rot;
-                        }
-                    }
+                    this.ClientPosError = prev_pos - Rb.position;
+                    this.ClientRotError = Quaternion.Inverse(Rb.rotation) * prev_rot;
                 }
             }
-
-            this.ClientTimer = client_timer;
-            this.ClientTickNumber = client_tick_number;
 
             if (this.EnableClientCorrectionSmoothing)
             {
@@ -224,6 +148,15 @@ namespace Mirror
 
             this.smoothed_client_player.transform.position = Rb.position + this.ClientPosError;
             this.smoothed_client_player.transform.rotation = Rb.rotation * this.ClientRotError;
+        }
+
+        [Client]
+        private void ClientUpdate(float dt)
+        {
+            if (ClientHasStateMessage())
+            {
+                NetworkRigidbodyManager.Instance.RigidbodyHasMessages(this);
+            }
         }
 
         [Server]
@@ -260,6 +193,76 @@ namespace Mirror
             }
         }
 
+        internal void AuthorityPreUpdate()
+        {
+            uint buffer_slot = NetworkRigidbodyManager.Instance.TickNumber % ClientBufferSize;
+
+            this.ClientForceBuffer[buffer_slot] = ForceStateBuffer;
+
+            // store state for this tick, then use current state + input to step simulation
+            this.ClientStoreCurrentStateAndStep(
+                ref this.ClientStateBuffer[buffer_slot],
+                ForceStateBuffer);
+        }
+
+        internal void AuthorityPostUpdate()
+        {
+            // send input packet to server
+            InputMessage input_msg;
+            input_msg.delivery_time = System.DateTime.Now.ToBinary();
+            input_msg.start_tick_number = this.SendRedundantInputs ? this.ClientLastReceivedStateTick : NetworkRigidbodyManager.Instance.TickNumber;
+            var InputBuffer = new List<ForceStateInput>();
+
+            for (uint tick = input_msg.start_tick_number; tick <= NetworkRigidbodyManager.Instance.TickNumber; ++tick)
+            {
+                InputBuffer.Add(ClientForceBuffer[tick % ClientBufferSize]);
+            }
+            input_msg.ForceInputs = InputBuffer.ToArray();
+            CmdSendInputMsg(input_msg);
+            ForceStateBuffer = default;
+        }
+
+        internal void ClientPreUpdate(ref uint tempRewindTick)
+        {
+            StateMessage state_msg = this.ClientStateMessages.Dequeue();
+            while (this.ClientHasStateMessage()) // make sure if there are any newer state messages available, we use those instead
+            {
+                state_msg = this.ClientStateMessages.Dequeue();
+            }
+
+            this.ClientLastReceivedStateTick = state_msg.tick_number;
+
+            if (this.EnableClientCorrections)
+            {
+                uint buffer_slot = state_msg.tick_number % ClientBufferSize;
+                Vector3 position_error = state_msg.position - this.ClientStateBuffer[buffer_slot].position;
+                float rotation_error = 1.0f - Quaternion.Dot(state_msg.rotation, this.ClientStateBuffer[buffer_slot].rotation);
+
+                if (position_error.sqrMagnitude > 0.0000001f ||
+                    rotation_error > 0.00001f)
+                {
+                    // capture the current predicted pos for smoothing
+                    prev_pos = Rb.position + this.ClientPosError;
+                    prev_rot = Rb.rotation * this.ClientRotError;
+
+                    // rewind & replay
+                    Rb.position = state_msg.position;
+                    Rb.rotation = state_msg.rotation;
+                    Rb.velocity = state_msg.velocity;
+                    Rb.angularVelocity = state_msg.angular_velocity;
+
+                    tempRewindTick = state_msg.tick_number;
+                }
+            }
+        }
+
+        internal void ClientApplyRewindState(uint BufferSlot)
+        {
+            ClientStoreCurrentStateAndStep(
+                ref ClientStateBuffer[BufferSlot],
+                ClientForceBuffer[BufferSlot]);
+        }
+
         // exploratory/unfinished
         public void AddNetworkedForce(Vector3 Force, ForceMode Mode)
         {
@@ -271,6 +274,7 @@ namespace Mirror
                     ForceMode = (int)Mode,
                     ForceIsRelative = false
                 };
+                NetworkRigidbodyManager.Instance.ClientHasInputs(this);
             }
         }
 
@@ -284,6 +288,7 @@ namespace Mirror
                     ForceMode = (int)Mode,
                     ForceIsRelative = true
                 };
+                NetworkRigidbodyManager.Instance.ClientHasInputs(this);
             }
         }
 
@@ -297,6 +302,7 @@ namespace Mirror
                     TorqueMode = (int)Mode,
                     TorqueIsRelative = false
                 };
+                NetworkRigidbodyManager.Instance.ClientHasInputs(this);
             }
         }
 
@@ -310,6 +316,7 @@ namespace Mirror
                     TorqueMode = (int)Mode,
                     TorqueIsRelative = true
                 };
+                NetworkRigidbodyManager.Instance.ClientHasInputs(this);
             }
         }
 
@@ -385,13 +392,12 @@ namespace Mirror
             return this.ClientStateMessages.Count > 0 && System.DateTime.Now.ToBinary() >= this.ClientStateMessages.Peek().delivery_time;
         }
 
-        private void ClientStoreCurrentStateAndStep(ref ClientState current_state, ForceStateInput inputs, float dt)
+        private void ClientStoreCurrentStateAndStep(ref ClientState current_state, ForceStateInput inputs)
         {
             current_state.position = Rb.position;
             current_state.rotation = Rb.rotation;
 
             this.PrePhysicsStep(inputs);
-            Physics.Simulate(dt);
         }
     }
 }
