@@ -38,7 +38,7 @@ namespace Mirror.Buffers
         {
             if (ibuffer is Buffer buffer)
             {
-#if PEDANTIC_ALLOCATOR
+#if MIRROR_BUFFER_PEDANTIC_ALLOCATOR
                 if (_bufferPool.Contains(buffer))
                 {
                     throw new System.ArgumentException("Do not Reacquire buffers which have been Released.", ibuffer.ToString());
@@ -65,7 +65,7 @@ namespace Mirror.Buffers
         {
             if (ibuffer is Buffer buffer)
             {
-#if PEDANTIC_ALLOCATOR
+#if MIRROR_BUFFER_PEDANTIC_ALLOCATOR
                 if (_bufferPool.Contains(buffer))
                 {
                     throw new System.ArgumentException("Do not Release buffers twice.", ibuffer.ToString());
