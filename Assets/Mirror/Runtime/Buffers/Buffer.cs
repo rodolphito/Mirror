@@ -19,6 +19,7 @@ namespace Mirror.Buffers
         private int _position;
         private int _length;
         private int _capacity;
+        private static Encoding encoding = new UTF8Encoding(false);
 
         //public int Position { get { return _position; } set { writer.BaseStream.Position = value; } }
 
@@ -65,89 +66,89 @@ namespace Mirror.Buffers
         private unsafe void Write(byte src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(BufferConstants.SizeOfByte);
+            CheckPosition(sizeof(byte));
 #endif
             fixed (byte* dst = &_buffer[_offset + _position])
             {
                 *dst = src;
             }
-            UpdatePosition(BufferConstants.SizeOfByte);
+            UpdatePosition(sizeof(byte));
         }
 
         private void Write(ushort src) => Write((short)src);
         private unsafe void Write(short src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(BufferConstants.SizeOfShort);
+            CheckPosition(sizeof(short));
 #endif
             fixed (byte* dst = &_buffer[_offset + _position])
             {
                 *(short*)dst = src;
             }
-            UpdatePosition(BufferConstants.SizeOfShort);
+            UpdatePosition(sizeof(short));
         }
 
         private void Write(uint src) => Write((int)src);
         private unsafe void Write(int src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(BufferConstants.SizeOfInt);
+            CheckPosition(sizeof(int));
 #endif
             fixed (byte* dst = &_buffer[_offset + _position])
             {
                 *(int*)dst = src;
             }
-            UpdatePosition(BufferConstants.SizeOfInt);
+            UpdatePosition(sizeof(int));
         }
 
         private void Write(ulong src) => Write((long)src);
         private unsafe void Write(long src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(BufferConstants.SizeOfLong);
+            CheckPosition(sizeof(long));
 #endif
             fixed (byte* dst = &_buffer[_offset + _position])
             {
                 *(long*)dst = src;
             }
-            UpdatePosition(BufferConstants.SizeOfLong);
+            UpdatePosition(sizeof(long));
         }
 
         private unsafe void Write(float src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(BufferConstants.SizeOfFloat);
+            CheckPosition(sizeof(float));
 #endif
             fixed (byte* dst = &_buffer[_offset + _position])
             {
                 *(float*)dst = src;
             }
-            UpdatePosition(BufferConstants.SizeOfFloat);
+            UpdatePosition(sizeof(float));
         }
 
         private unsafe void Write(double src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(BufferConstants.SizeOfDouble);
+            CheckPosition(sizeof(double));
 #endif
             fixed (byte* dst = &_buffer[_offset + _position])
             {
                 *(double*)dst = src;
             }
-            UpdatePosition(BufferConstants.SizeOfDouble);
+            UpdatePosition(sizeof(double));
         }
 
         public unsafe void Write(string src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(src.Length);
+            CheckPosition(encoding.GetByteCount(src));
 #endif
             int written;
 
             fixed (char* s = src)
             fixed (byte* dst = &_buffer[_offset + _position])
             {
-                written = Encoding.UTF8.GetBytes(s, src.Length, dst, _capacity - _position);
+                written = encoding.GetBytes(s, src.Length, dst, _capacity - _position);
             }
             UpdatePosition(written);
         }
