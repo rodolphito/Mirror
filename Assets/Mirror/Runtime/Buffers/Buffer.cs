@@ -140,7 +140,7 @@ namespace Mirror.Buffers
         public unsafe void Write(string src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(src.Length);
+            CheckPosition(Encoding.UTF8.GetByteCount(src));
 #endif
             int written;
 
