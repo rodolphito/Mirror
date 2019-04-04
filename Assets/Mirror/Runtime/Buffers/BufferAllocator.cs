@@ -9,8 +9,8 @@ namespace Mirror.Buffers
 {
     public interface IBufferAllocator
     {
-        IBuffer Acquire(int minSizeInBytes);
-        IBuffer Reacquire(IBuffer buffer, int newMinSizeInBytes);
+        IBuffer Acquire(uint minSizeInBytes);
+        IBuffer Reacquire(IBuffer buffer, uint newMinSizeInBytes);
         void Release(IBuffer buffer);
     }
 
@@ -18,7 +18,7 @@ namespace Mirror.Buffers
     {
         private Stack<Buffer> _bufferPool = new Stack<Buffer>();
         private ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
-        public IBuffer Acquire(int minSizeInBytes = BufferConstants.DefaultBufferSize)
+        public IBuffer Acquire(uint minSizeInBytes = BufferConstants.DefaultBufferSize)
         {
             Buffer rv;
             if (_bufferPool.Count > 0)
@@ -30,12 +30,12 @@ namespace Mirror.Buffers
                 rv = new Buffer();
             }
 
-            rv.Setup(_arrayPool.Rent(minSizeInBytes), 0, minSizeInBytes);
+            rv.Setup(_arrayPool.Rent((int) minSizeInBytes), 0, minSizeInBytes);
 
             return rv;
         }
 
-        public IBuffer Reacquire(IBuffer ibuffer, int newMinSizeInBytes = 0)
+        public IBuffer Reacquire(IBuffer ibuffer, uint newMinSizeInBytes = 0)
         {
             if (ibuffer is Buffer buffer)
             {
@@ -43,7 +43,7 @@ namespace Mirror.Buffers
                 // 1) rent new array from ArrayPool, copy from old, release old
                 // 2) buffer segments / system.io.pipelines magic
                 // for now option 1)
-                
+                _arrayPool.Rent((int) newMinSizeInBytes);
                 return ibuffer;
             }
             else
