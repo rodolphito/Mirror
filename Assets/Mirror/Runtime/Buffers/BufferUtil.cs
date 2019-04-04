@@ -326,10 +326,6 @@ namespace Mirror.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void UnsafeRead(ref ushort ushortDst, byte[] src, int srcOffset)
         {
-            sbyte turnt = 1;
-            byte[] snaco = new byte[] { 3, 4 };
-            UnsafeRead(ref turnt, snaco, 0);
-
             fixed (void* pdst = &ushortDst)
             fixed (byte* psrc = &src[srcOffset])
             {
