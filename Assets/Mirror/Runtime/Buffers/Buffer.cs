@@ -36,10 +36,6 @@ namespace Mirror.Buffers
         private void CheckPosition(uint addToPos)
         {
             uint newPos = _position + addToPos;
-            if (newPos < 0)
-            {
-                throw new ArgumentOutOfRangeException("buffer cursor position cannot be negative");
-            }
 
             if (newPos >= Capacity)
             {
