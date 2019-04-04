@@ -48,7 +48,7 @@ namespace Mirror.Buffers
             }
             else
             {
-                throw new System.ArgumentException("Do not Reacquire bufferes Acquired from a different Allocator!", ibuffer.GetType().ToString());
+                throw new System.ArgumentException("Do not Reacquire buffers Acquired from a different Allocator!", ibuffer.ToString());
             }
         }
 
@@ -60,7 +60,7 @@ namespace Mirror.Buffers
             }
             else
             {
-                throw new System.ArgumentException("Do not Release bufferes Acquired from a different Allocator!", ibuffer.GetType().ToString());
+                throw new System.ArgumentException("Do not Release buffers Acquired from a different Allocator!", ibuffer.ToString());
             }
         }
     }
