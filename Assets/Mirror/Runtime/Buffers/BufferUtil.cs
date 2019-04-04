@@ -113,7 +113,7 @@ namespace Mirror.Buffers
         public static unsafe void UnsafeCopy3(byte* pdst, byte* psrc)
         {
             *(ushort*)pdst = *(ushort*)psrc;
-            *(pdst + BufferConstants.SizeOfShort) = *(psrc + BufferConstants.SizeOfShort);
+            *(pdst + sizeof(short)) = *(psrc + sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,22 +126,22 @@ namespace Mirror.Buffers
         public static unsafe void UnsafeCopy5(byte* pdst, byte* psrc)
         {
             *(uint*)pdst = *(uint*)psrc;
-            *(pdst + BufferConstants.SizeOfInt) = *(psrc + BufferConstants.SizeOfInt);
+            *(pdst + sizeof(int)) = *(psrc + sizeof(int));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void UnsafeCopy6(byte* pdst, byte* psrc)
         {
             *(uint*)pdst = *(uint*)psrc;
-            *(ushort*)(pdst + BufferConstants.SizeOfInt) = *(ushort*)(psrc + BufferConstants.SizeOfInt);
+            *(ushort*)(pdst + sizeof(int)) = *(ushort*)(psrc + sizeof(int));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void UnsafeCopy7(byte* pdst, byte* psrc)
         {
             *(uint*)pdst = *(uint*)psrc;
-            *(ushort*)(pdst + BufferConstants.SizeOfInt) = *(ushort*)(psrc + BufferConstants.SizeOfInt);
-            *(pdst + BufferConstants.SizeOfInt + BufferConstants.SizeOfShort) = *(psrc + BufferConstants.SizeOfInt + BufferConstants.SizeOfShort);
+            *(ushort*)(pdst + sizeof(int)) = *(ushort*)(psrc + sizeof(int));
+            *(pdst + sizeof(int) + sizeof(short)) = *(psrc + sizeof(int) + sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -235,7 +235,7 @@ namespace Mirror.Buffers
             fixed (byte* pdst = &dst[dstOffset])
             {
                 // write anything over 8 bytes as a series of long*
-                for (int cursor = 0; cursor < longWriteLimit; cursor += BufferConstants.SizeOfLong)
+                for (int cursor = 0; cursor < longWriteLimit; cursor += sizeof(long))
                 {
                     UnsafeCopy8(pdst + cursor, psrc + cursor);
                 }
