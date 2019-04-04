@@ -43,7 +43,11 @@ namespace Mirror.Buffers
 
         internal void Setup(byte[] buf, ulong offset, ulong capacity)
         {
-
+            _buffer = buf;
+            _offset = offset;
+            _position = 0;
+            _length = 0;
+            Capacity = capacity;
         }
 
 #if MIRROR_BUFFER_CHECK_BOUNDS
