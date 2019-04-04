@@ -124,12 +124,12 @@ namespace Mirror.Buffers
             }
         }
 
-        public static IBuffer AcquireBuffer(int minSizeInBytes)
+        public static IBuffer AcquireBuffer(ulong minSizeInBytes)
         {
             return _bufferAllocator.Acquire(minSizeInBytes);
         }
 
-        public static IBuffer ReacquireBuffer(IBuffer rentedBuffer, int newMinSizeInBytes)
+        public static IBuffer ReacquireBuffer(IBuffer rentedBuffer, ulong newMinSizeInBytes)
         {
             return _bufferAllocator.Reacquire(rentedBuffer, newMinSizeInBytes);
         }

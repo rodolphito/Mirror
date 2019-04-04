@@ -15,12 +15,12 @@ namespace Mirror.Buffers
     {
         private IBufferAllocator _bufferAllocator;
         private byte[] _buffer;
-        private uint _offset;
-        private uint _position;
-        private uint _length;
+        private ulong _offset;
+        private ulong _position;
+        private ulong _length;
         private static Encoding encoding = new UTF8Encoding(false);
 
-        internal uint Capacity { get; private set; }
+        internal ulong Capacity { get; private set; }
 
         //public int Position { get { return _position; } set { writer.BaseStream.Position = value; } }
 
@@ -28,14 +28,14 @@ namespace Mirror.Buffers
         {
         }
 
-        internal void Setup(byte[] buf, uint offset, uint capacity)
+        internal void Setup(byte[] buf, ulong offset, ulong capacity)
         {
 
         }
 
-        private void CheckPosition(uint addToPos)
+        private void CheckPosition(ulong addToPos)
         {
-            uint newPos = _position + addToPos;
+            ulong newPos = _position + addToPos;
 
             if (newPos >= Capacity)
             {
