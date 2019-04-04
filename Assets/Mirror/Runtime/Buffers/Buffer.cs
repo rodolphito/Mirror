@@ -18,7 +18,7 @@ namespace Mirror.Buffers
         ulong _offset;
         ulong _position;
         ulong _length;
-        static Encoding encoding = new UTF8Encoding(false);
+        static Encoding _encoding = new UTF8Encoding(false);
 
         internal ulong Capacity { get; private set; }
 
@@ -134,14 +134,14 @@ namespace Mirror.Buffers
         unsafe void Write(string src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition((uint) encoding.GetByteCount(src));
+            CheckPosition((uint) _encoding.GetByteCount(src));
 #endif
             uint written;
 
             fixed (char* s = src)
             fixed (byte* dst = &_buffer[_offset + _position])
             {
-                written = (uint) encoding.GetBytes(s, src.Length, dst, (int) (Capacity - _position));
+                written = (uint) _encoding.GetBytes(s, src.Length, dst, (int) (Capacity - _position));
             }
             UpdatePosition(written);
         }
