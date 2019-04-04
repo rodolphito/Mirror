@@ -12,7 +12,7 @@ namespace Mirror.Buffers
         void Release(IBuffer buffer);
     }
 
-    internal class BufferAllocator : IBufferAllocator
+    internal sealed class BufferAllocator : IBufferAllocator
     {
         Stack<Buffer> _bufferPool = new Stack<Buffer>();
         ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
