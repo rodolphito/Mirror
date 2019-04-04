@@ -26,7 +26,7 @@ namespace Mirror.Buffers
         public static sbyte NextPow2(sbyte val) => (sbyte)NextPow2((byte)val);
         public static byte NextPow2(byte val)
         {
-            val = (byte)(val < 2 ? 2 : val);
+            val = (byte)(val < 1 ? 1 : val);
             val--;
             val |= (byte)(val >> 1);
             val |= (byte)(val >> 2);
@@ -38,7 +38,7 @@ namespace Mirror.Buffers
         public static short NextPow2(short val) => (short)NextPow2((ushort)val);
         public static ushort NextPow2(ushort val)
         {
-            val = (ushort)(val < 2 ? 2 : val);
+            val = (ushort)(val < 1 ? 1 : val);
             val--;
             val |= (ushort)(val >> 1);
             val |= (ushort)(val >> 2);
@@ -51,7 +51,7 @@ namespace Mirror.Buffers
         public static int NextPow2(int val) => (int)NextPow2((uint)val);
         public static uint NextPow2(uint val)
         {
-            val = (val < 2 ? 2 : val);
+            val = (val < 1 ? 1 : val);
             val--;
             val |= val >> 1;
             val |= val >> 2;
@@ -65,7 +65,7 @@ namespace Mirror.Buffers
         public static long NextPow2(long val) => (long)NextPow2((ulong)val);
         public static ulong NextPow2(ulong val)
         {
-            val = (val < 2 ? 2 : val);
+            val = (val < 1 ? 1 : val);
             val--;
             val |= val >> 1;
             val |= val >> 2;
