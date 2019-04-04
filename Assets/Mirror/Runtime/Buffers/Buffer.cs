@@ -19,6 +19,7 @@ namespace Mirror.Buffers
         private int _position;
         private int _length;
         private int _capacity;
+        private static Encoding encoding = new UTF8Encoding(false);
 
         //public int Position { get { return _position; } set { writer.BaseStream.Position = value; } }
 
@@ -140,14 +141,14 @@ namespace Mirror.Buffers
         public unsafe void Write(string src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(Encoding.UTF8.GetByteCount(src));
+            CheckPosition(encoding.GetByteCount(src));
 #endif
             int written;
 
             fixed (char* s = src)
             fixed (byte* dst = &_buffer[_offset + _position])
             {
-                written = Encoding.UTF8.GetBytes(s, src.Length, dst, _capacity - _position);
+                written = encoding.GetBytes(s, src.Length, dst, _capacity - _position);
             }
             UpdatePosition(written);
         }
