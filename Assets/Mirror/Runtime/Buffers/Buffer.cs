@@ -24,7 +24,7 @@ namespace Mirror.Buffers
         string ReadString();
     }
 
-    internal unsafe class Buffer : IBuffer
+    internal sealed unsafe class Buffer : IBuffer
     {
         IBufferAllocator _bufferAllocator;
         byte[] _buffer;
