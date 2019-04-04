@@ -14,8 +14,8 @@ namespace Mirror.Buffers
 
     internal class BufferAllocator : IBufferAllocator
     {
-        private Stack<Buffer> _bufferPool = new Stack<Buffer>();
-        private ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
+        Stack<Buffer> _bufferPool = new Stack<Buffer>();
+        ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
         public IBuffer Acquire(ulong minSizeInBytes = BufferConstants.DefaultBufferSize)
         {
             Buffer buffer;
