@@ -15,12 +15,12 @@ namespace Mirror.Buffers
     {
         private IBufferAllocator _bufferAllocator;
         private byte[] _buffer;
-        private int _offset;
-        private int _position;
-        private int _length;
+        private uint _offset;
+        private uint _position;
+        private uint _length;
         private static Encoding encoding = new UTF8Encoding(false);
 
-        internal int Capacity { get; private set; }
+        internal uint Capacity { get; private set; }
 
         //public int Position { get { return _position; } set { writer.BaseStream.Position = value; } }
 
@@ -28,14 +28,14 @@ namespace Mirror.Buffers
         {
         }
 
-        internal void Setup(byte[] buf, int offset, int capacity)
+        internal void Setup(byte[] buf, uint offset, uint capacity)
         {
 
         }
 
-        private void CheckPosition(int addToPos)
+        private void CheckPosition(uint addToPos)
         {
-            int newPos = _position + addToPos;
+            uint newPos = _position + addToPos;
             if (newPos < 0)
             {
                 throw new ArgumentOutOfRangeException("buffer cursor position cannot be negative");
@@ -52,10 +52,10 @@ namespace Mirror.Buffers
             }
         }
 
-        private void UpdatePosition(int addToPos)
+        private void UpdatePosition(uint addToPos)
         {
             _position += addToPos;
-            BufferUtil.Max(_position, _length);
+            _length = BufferUtil.Max(_position, _length);
         }
 
         private void Write(bool src) => Write((byte)(src ? 1 : 0));
@@ -139,14 +139,14 @@ namespace Mirror.Buffers
         public unsafe void Write(string src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            CheckPosition(encoding.GetByteCount(src));
+            CheckPosition((uint) encoding.GetByteCount(src));
 #endif
-            int written;
+            uint written;
 
             fixed (char* s = src)
             fixed (byte* dst = &_buffer[_offset + _position])
             {
-                written = encoding.GetBytes(s, src.Length, dst, Capacity - _position);
+                written = (uint) encoding.GetBytes(s, src.Length, dst, (int) (Capacity - _position));
             }
             UpdatePosition(written);
         }
