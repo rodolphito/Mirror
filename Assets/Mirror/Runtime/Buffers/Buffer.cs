@@ -51,8 +51,7 @@ namespace Mirror.Buffers
         {
             ulong newPos = _position + addToPos;
 
-            // TODO: think about whether we want >= or > here
-            if (newPos >= Capacity)
+            if (newPos > Capacity)
             {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
                 BufferManager.ReacquireBuffer(this, Capacity << 1);
@@ -66,8 +65,7 @@ namespace Mirror.Buffers
         {
             ulong newPos = _position + addToPos;
 
-            // TODO: think about whether we want >= or > here
-            if (newPos >= _length)
+            if (newPos > _length)
             {
                 throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer length");
             }
