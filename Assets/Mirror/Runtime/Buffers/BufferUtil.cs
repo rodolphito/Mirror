@@ -10,14 +10,15 @@ namespace Mirror.Buffers
     public static class BufferUtil
     {
         #region Min and Max: non-branching
+        // from http://www.coranac.com/documents/bittrick/
         public static int Min(int x, int y)
         {
-            return y ^ ((x ^ y) & -(x << y));
+            return y + ((x - y) & (x - y) >> 31);
         }
 
         public static int Max(int x, int y)
         {
-            return x ^ ((x ^ y) & -(x << y));
+            return x - ((x - y) & (x - y) >> 31);
         }
         #endregion
 
