@@ -26,7 +26,6 @@ namespace Mirror.Buffers
 
     internal sealed unsafe class Buffer : IBuffer
     {
-        IBufferAllocator _bufferAllocator;
         byte[] _buffer;
         ulong _offset;
         ulong _position;
