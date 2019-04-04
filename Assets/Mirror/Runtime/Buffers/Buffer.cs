@@ -21,7 +21,7 @@ namespace Mirror.Buffers
         ulong ReadULong();
         float ReadFloat();
         double ReadDouble();
-        string ReadString();
+        string ReadString(uint length);
     }
 
     internal sealed unsafe class Buffer : IBuffer
@@ -258,7 +258,7 @@ namespace Mirror.Buffers
             return dst;
         }
 
-        unsafe string IBuffer.ReadString()
+        unsafe string IBuffer.ReadString(uint length)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             //CheckRead((uint) _encoding.GetByteCount(src));
