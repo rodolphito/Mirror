@@ -18,8 +18,9 @@ namespace Mirror.Buffers
         private int _offset;
         private int _position;
         private int _length;
-        private int _capacity;
         private static Encoding encoding = new UTF8Encoding(false);
+
+        internal int Capacity { get; private set; }
 
         //public int Position { get { return _position; } set { writer.BaseStream.Position = value; } }
 
@@ -40,11 +41,11 @@ namespace Mirror.Buffers
                 throw new ArgumentOutOfRangeException("buffer cursor position cannot be negative");
             }
 
-            if (newPos >= _capacity)
+            if (newPos >= Capacity)
             {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
 
-                BufferManager.ReacquireBuffer(this, _capacity << 1);
+                BufferManager.ReacquireBuffer(this, Capacity << 1);
 #else
                 throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer capacity");
 #endif
@@ -54,10 +55,7 @@ namespace Mirror.Buffers
         private void UpdatePosition(int addToPos)
         {
             _position += addToPos;
-            if (_position > _length)
-            {
-                _length = _position;
-            }
+            BufferUtil.Max(_position, _length);
         }
 
         private void Write(bool src) => Write((byte)(src ? 1 : 0));
@@ -148,7 +146,7 @@ namespace Mirror.Buffers
             fixed (char* s = src)
             fixed (byte* dst = &_buffer[_offset + _position])
             {
-                written = encoding.GetBytes(s, src.Length, dst, _capacity - _position);
+                written = encoding.GetBytes(s, src.Length, dst, Capacity - _position);
             }
             UpdatePosition(written);
         }
