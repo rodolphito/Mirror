@@ -13,12 +13,12 @@ namespace Mirror.Buffers
 
     internal unsafe class Buffer : IBuffer
     {
-        private IBufferAllocator _bufferAllocator;
-        private byte[] _buffer;
-        private ulong _offset;
-        private ulong _position;
-        private ulong _length;
-        private static Encoding encoding = new UTF8Encoding(false);
+        IBufferAllocator _bufferAllocator;
+        byte[] _buffer;
+        ulong _offset;
+        ulong _position;
+        ulong _length;
+        static Encoding encoding = new UTF8Encoding(false);
 
         internal ulong Capacity { get; private set; }
 
@@ -33,14 +33,13 @@ namespace Mirror.Buffers
 
         }
 
-        private void CheckPosition(ulong addToPos)
+        void CheckPosition(ulong addToPos)
         {
             ulong newPos = _position + addToPos;
 
             if (newPos >= Capacity)
             {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-
                 BufferManager.ReacquireBuffer(this, Capacity << 1);
 #else
                 throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer capacity");
@@ -48,16 +47,16 @@ namespace Mirror.Buffers
             }
         }
 
-        private void UpdatePosition(uint addToPos)
+        void UpdatePosition(uint addToPos)
         {
             _position += addToPos;
             _length = BufferUtil.Max(_position, _length);
         }
 
-        private void Write(bool src) => Write((byte)(src ? 1 : 0));
+        void Write(bool src) => Write((byte)(src ? 1 : 0));
 
-        private void Write(sbyte src) => Write((byte)src);
-        private unsafe void Write(byte src)
+        void Write(sbyte src) => Write((byte)src);
+        unsafe void Write(byte src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckPosition(sizeof(byte));
@@ -69,8 +68,8 @@ namespace Mirror.Buffers
             UpdatePosition(sizeof(byte));
         }
 
-        private void Write(ushort src) => Write((short)src);
-        private unsafe void Write(short src)
+        void Write(ushort src) => Write((short)src);
+        unsafe void Write(short src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckPosition(sizeof(short));
@@ -82,8 +81,8 @@ namespace Mirror.Buffers
             UpdatePosition(sizeof(short));
         }
 
-        private void Write(uint src) => Write((int)src);
-        private unsafe void Write(int src)
+        void Write(uint src) => Write((int)src);
+        unsafe void Write(int src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckPosition(sizeof(int));
@@ -95,8 +94,8 @@ namespace Mirror.Buffers
             UpdatePosition(sizeof(int));
         }
 
-        private void Write(ulong src) => Write((long)src);
-        private unsafe void Write(long src)
+        void Write(ulong src) => Write((long)src);
+        unsafe void Write(long src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckPosition(sizeof(long));
@@ -108,7 +107,7 @@ namespace Mirror.Buffers
             UpdatePosition(sizeof(long));
         }
 
-        private unsafe void Write(float src)
+        unsafe void Write(float src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckPosition(sizeof(float));
@@ -120,7 +119,7 @@ namespace Mirror.Buffers
             UpdatePosition(sizeof(float));
         }
 
-        private unsafe void Write(double src)
+        unsafe void Write(double src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckPosition(sizeof(double));
@@ -132,7 +131,7 @@ namespace Mirror.Buffers
             UpdatePosition(sizeof(double));
         }
 
-        public unsafe void Write(string src)
+        unsafe void Write(string src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckPosition((uint) encoding.GetByteCount(src));
