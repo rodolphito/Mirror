@@ -9,6 +9,18 @@ namespace Mirror.Buffers
 {
     public static class BufferUtil
     {
+        #region Min and Max: non-branching
+        public static int Min(int x, int y)
+        {
+            return y ^ ((x ^ y) & -(x << y));
+        }
+
+        public static int Max(int x, int y)
+        {
+            return x ^ ((x ^ y) & -(x << y));
+        }
+        #endregion
+
         #region NextPow2: rounding up to closest power of two
         public static sbyte NextPow2(sbyte val) => (sbyte)NextPow2((byte)val);
         public static byte NextPow2(byte val)
