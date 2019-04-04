@@ -1,7 +1,4 @@
-#define ENABLE_SPAN_T
-#define UNSAFE_BYTEBUFFER
-#define BYTEBUFFER_NO_BOUNDS_CHECK
-#define PEDANTIC_ALLOCATOR
+#define MIRROR_BUFFER_PEDANTIC_ALLOCATOR
 
 using System.Collections.Generic;
 using System.Buffers;
