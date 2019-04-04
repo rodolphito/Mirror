@@ -9,23 +9,39 @@ namespace Mirror.Buffers
 {
     public static class BufferUtil
     {
+        const MethodImplOptions Inline = MethodImplOptions.AggressiveInlining;
         #region Min and Max: non-branching
-        public static int Min(int x, int y)
-        {
-            return y ^ ((x ^ y) & -(x << y));
-        }
+        // from http://www.coranac.com/documents/bittrick/
+        [MethodImpl(Inline)]
+        public static byte Min(byte x, byte y) => (byte) (y + ((x - y) & (x - y) >> (sizeof(byte) * 8 - 1)));
 
-        public static int Max(int x, int y)
-        {
-            return x ^ ((x ^ y) & -(x << y));
-        }
+        [MethodImpl(Inline)]
+        public static byte Max(byte x, byte y) => (byte) (x - ((x - y) & (x - y) >> (sizeof(byte) * 8 - 1)));
+
+        [MethodImpl(Inline)]
+        public static ushort Min(ushort x, ushort y) => (ushort) (y + ((x - y) & (x - y) >> (sizeof(ushort) * 8 - 1)));
+
+        [MethodImpl(Inline)]
+        public static ushort Max(ushort x, ushort y) => (ushort) (x - ((x - y) & (x - y) >> (sizeof(ushort) * 8 - 1)));
+
+        [MethodImpl(Inline)]
+        public static uint Min(uint x, uint y) => (uint) (y + ((x - y) & (x - y) >> (sizeof(uint) * 8 - 1)));
+
+        [MethodImpl(Inline)]
+        public static uint Max(uint x, uint y) => (uint) (x - ((x - y) & (x - y) >> (sizeof(uint) * 8 - 1)));
+
+        [MethodImpl(Inline)]
+        public static ulong Min(ulong x, ulong y) => (ulong) (y + ((x - y) & (x - y) >> (sizeof(ulong) * 8 - 1)));
+
+        [MethodImpl(Inline)]
+        public static ulong Max(ulong x, ulong y) => (ulong) (x - ((x - y) & (x - y) >> (sizeof(ulong) * 8 - 1)));
         #endregion
 
         #region NextPow2: rounding up to closest power of two
         public static sbyte NextPow2(sbyte val) => (sbyte)NextPow2((byte)val);
         public static byte NextPow2(byte val)
         {
-            val = (byte)(val < 2 ? 2 : val);
+            val = Max(val, 1);
             val--;
             val |= (byte)(val >> 1);
             val |= (byte)(val >> 2);
@@ -37,7 +53,7 @@ namespace Mirror.Buffers
         public static short NextPow2(short val) => (short)NextPow2((ushort)val);
         public static ushort NextPow2(ushort val)
         {
-            val = (ushort)(val < 2 ? 2 : val);
+            val = Max(val, 1);
             val--;
             val |= (ushort)(val >> 1);
             val |= (ushort)(val >> 2);
@@ -50,7 +66,7 @@ namespace Mirror.Buffers
         public static int NextPow2(int val) => (int)NextPow2((uint)val);
         public static uint NextPow2(uint val)
         {
-            val = (val < 2 ? 2 : val);
+            val = Max(val, 1);
             val--;
             val |= val >> 1;
             val |= val >> 2;
@@ -64,7 +80,7 @@ namespace Mirror.Buffers
         public static long NextPow2(long val) => (long)NextPow2((ulong)val);
         public static ulong NextPow2(ulong val)
         {
-            val = (val < 2 ? 2 : val);
+            val = Max(val, 1);
             val--;
             val |= val >> 1;
             val |= val >> 2;
@@ -109,46 +125,46 @@ namespace Mirror.Buffers
         #endregion
 
         #region UnsafeCopy#: raw pointer based binary copy for exact sizes from 1 - 8 bytes
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy1(byte* pdst, byte* psrc)
         {
             *pdst = *psrc;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy2(byte* pdst, byte* psrc)
         {
             *(ushort*)pdst = *(ushort*)psrc;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy3(byte* pdst, byte* psrc)
         {
             *(ushort*)pdst = *(ushort*)psrc;
             *(pdst + sizeof(short)) = *(psrc + sizeof(short));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy4(byte* pdst, byte* psrc)
         {
             *(uint*)pdst = *(uint*)psrc;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy5(byte* pdst, byte* psrc)
         {
             *(uint*)pdst = *(uint*)psrc;
             *(pdst + sizeof(int)) = *(psrc + sizeof(int));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy6(byte* pdst, byte* psrc)
         {
             *(uint*)pdst = *(uint*)psrc;
             *(ushort*)(pdst + sizeof(int)) = *(ushort*)(psrc + sizeof(int));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy7(byte* pdst, byte* psrc)
         {
             *(uint*)pdst = *(uint*)psrc;
@@ -156,7 +172,7 @@ namespace Mirror.Buffers
             *(pdst + sizeof(int) + sizeof(short)) = *(psrc + sizeof(int) + sizeof(short));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy8(byte* pdst, byte* psrc)
         {
             *(ulong*)pdst = *(ulong*)psrc;
@@ -164,12 +180,12 @@ namespace Mirror.Buffers
         #endregion
 
         #region UnsafeWrite: unsafe binary writing using fixed pinning
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static void UnsafeWrite(byte[] dst, int dstOffset, bool boolSrc) => UnsafeWrite(dst, dstOffset, (byte)(boolSrc ? 1 : 0));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static void UnsafeWrite(byte[] dst, int dstOffset, sbyte sbyteSrc) => UnsafeWrite(dst, dstOffset, (byte)sbyteSrc);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, byte byteSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
@@ -178,9 +194,9 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static void UnsafeWrite(byte[] dst, int dstOffset, short shortSrc) => UnsafeWrite(dst, dstOffset, (ushort)shortSrc);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, ushort ushortSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
@@ -189,9 +205,9 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static void UnsafeWrite(byte[] dst, int dstOffset, int intSrc) => UnsafeWrite(dst, dstOffset, (uint)intSrc);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, uint uintSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
@@ -200,9 +216,9 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static void UnsafeWrite(byte[] dst, int dstOffset, long longSrc) => UnsafeWrite(dst, dstOffset, (ulong)longSrc);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, ulong ulongSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
@@ -211,7 +227,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, float floatSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
@@ -220,7 +236,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, double doubleSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
@@ -229,7 +245,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, string stringSrc)
         {
             fixed (char* s = stringSrc)
@@ -239,7 +255,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, byte[] src, int srcOffset, int byteLength)
         {
             int longWriteLimit = (int)(byteLength & 0xfffffff8);
@@ -284,7 +300,7 @@ namespace Mirror.Buffers
         #endregion
 
         #region UnsafeRead: unsafe binary reading using fixed pinning
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref bool boolDst, byte[] src, int srcOffset)
         {
             fixed (byte* psrc = &src[srcOffset])
@@ -293,7 +309,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref sbyte sbyteDst, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &sbyteDst)
@@ -303,7 +319,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref byte byteDst, byte[] src, int srcOffset)
         {
             fixed (byte* pdst = &byteDst)
@@ -313,7 +329,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref short shortDst, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &shortDst)
@@ -323,13 +339,9 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref ushort ushortDst, byte[] src, int srcOffset)
         {
-            sbyte turnt = 1;
-            byte[] snaco = new byte[] { 3, 4 };
-            UnsafeRead(ref turnt, snaco, 0);
-
             fixed (void* pdst = &ushortDst)
             fixed (byte* psrc = &src[srcOffset])
             {
@@ -337,7 +349,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref int intSrc, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &intSrc)
@@ -347,7 +359,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref uint uintDst, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &uintDst)
@@ -357,7 +369,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref long longDst, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &longDst)
@@ -367,7 +379,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref ulong ulongDst, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &ulongDst)
@@ -377,7 +389,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref float floatDst, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &floatDst)
@@ -387,7 +399,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref double doubleDst, byte[] src, int srcOffset)
         {
             fixed (void* pdst = &doubleDst)
@@ -397,7 +409,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(ref string stringDst, byte[] src, int srcOffset, int byteLength)
         {
             fixed (byte* psrc = &src[srcOffset])
@@ -406,7 +418,7 @@ namespace Mirror.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(byte[] dst, int dstOffset, byte[] src, int srcOffset, int byteLength) => UnsafeWrite(src, srcOffset, dst, dstOffset, byteLength);
         #endregion
     }

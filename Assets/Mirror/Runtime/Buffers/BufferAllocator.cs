@@ -1,6 +1,4 @@
-#define ENABLE_SPAN_T
-#define UNSAFE_BYTEBUFFER
-#define BYTEBUFFER_NO_BOUNDS_CHECK
+#define MIRROR_BUFFER_PEDANTIC_ALLOCATOR
 
 using System.Collections.Generic;
 using System.Buffers;
@@ -9,41 +7,52 @@ namespace Mirror.Buffers
 {
     public interface IBufferAllocator
     {
-        IBuffer Acquire(int minSizeInBytes);
-        IBuffer Reacquire(IBuffer buffer, int newMinSizeInBytes);
+        IBuffer Acquire(ulong minSizeInBytes);
+        IBuffer Reacquire(IBuffer buffer, ulong newMinSizeInBytes);
         void Release(IBuffer buffer);
     }
 
-    internal class BufferAllocator : IBufferAllocator
+    internal sealed class BufferAllocator : IBufferAllocator
     {
-        private Stack<Buffer> _bufferPool = new Stack<Buffer>();
-        private ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
-        public IBuffer Acquire(int minSizeInBytes = BufferConstants.DefaultBufferSize)
+        Stack<Buffer> _bufferPool = new Stack<Buffer>();
+        ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
+        public IBuffer Acquire(ulong minSizeInBytes = BufferConstants.DefaultBufferSize)
         {
-            Buffer rv;
+            Buffer buffer;
             if (_bufferPool.Count > 0)
             {
-                rv = _bufferPool.Pop();
+                buffer = _bufferPool.Pop();
             }
             else
             {
-                rv = new Buffer();
+                buffer = new Buffer();
             }
 
-            rv.Setup(_arrayPool.Rent(minSizeInBytes), 0, minSizeInBytes);
+            byte[] bytes = _arrayPool.Rent((int) minSizeInBytes);
+            buffer.Setup(bytes, 0, (ulong) bytes.Length);
 
-            return rv;
+            return buffer;
         }
 
-        public IBuffer Reacquire(IBuffer ibuffer, int newMinSizeInBytes = 0)
+        public IBuffer Reacquire(IBuffer ibuffer, ulong newMinSizeInBytes)
         {
             if (ibuffer is Buffer buffer)
             {
+#if MIRROR_BUFFER_PEDANTIC_ALLOCATOR
+                if (_bufferPool.Contains(buffer))
+                {
+                    throw new System.ArgumentException("Do not Reacquire buffers which have been Released.", ibuffer.ToString());
+                }
+#endif
                 // one of two options here:
                 // 1) rent new array from ArrayPool, copy from old, release old
                 // 2) buffer segments / system.io.pipelines magic
                 // for now option 1)
-                
+                if (newMinSizeInBytes < buffer.Capacity) return buffer;
+
+                byte[] bytes = _arrayPool.Rent((int) newMinSizeInBytes);
+                buffer.Setup(bytes, 0, (ulong) bytes.Length);
+
                 return ibuffer;
             }
             else
@@ -56,6 +65,12 @@ namespace Mirror.Buffers
         {
             if (ibuffer is Buffer buffer)
             {
+#if MIRROR_BUFFER_PEDANTIC_ALLOCATOR
+                if (_bufferPool.Contains(buffer))
+                {
+                    throw new System.ArgumentException("Do not Release buffers twice.", ibuffer.ToString());
+                }
+#endif
                 _bufferPool.Push(buffer);
             }
             else
