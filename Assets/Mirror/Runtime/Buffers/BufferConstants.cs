@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace Mirror.Buffers
 {
-    public static class BufferConstants
+    internal static class BufferConstants
     {
-        public const int DefaultBufferSize = 512;
+        internal const int DefaultBufferSize = 512;
     }
 }
