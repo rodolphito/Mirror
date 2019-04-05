@@ -10,6 +10,7 @@ namespace Mirror.Buffers
     public static class BufferUtil
     {
         const MethodImplOptions Inline = MethodImplOptions.AggressiveInlining;
+        static Encoding _encoding = new UTF8Encoding(false);
         #region Min and Max: non-branching
         // from http://www.coranac.com/documents/bittrick/
         [MethodImpl(Inline)]
@@ -113,14 +114,14 @@ namespace Mirror.Buffers
         public static long SwapBytes(long input) => (long)SwapBytes((ulong)input);
         public static ulong SwapBytes(ulong input)
         {
-            return (((input & 0x00000000000000FFUL) << 56) |
-                    ((input & 0x000000000000FF00UL) << 40) |
-                    ((input & 0x0000000000FF0000UL) << 24) |
-                    ((input & 0x00000000FF000000UL) << 8) |
-                    ((input & 0x000000FF00000000UL) >> 8) |
-                    ((input & 0x0000FF0000000000UL) >> 24) |
-                    ((input & 0x00FF000000000000UL) >> 40) |
-                    ((input & 0xFF00000000000000UL) >> 56));
+            return ((input & 0x00000000000000FFUL) << 56) |
+                   ((input & 0x000000000000FF00UL) << 40) |
+                   ((input & 0x0000000000FF0000UL) << 24) |
+                   ((input & 0x00000000FF000000UL) << 8) |
+                   ((input & 0x000000FF00000000UL) >> 8) |
+                   ((input & 0x0000FF0000000000UL) >> 24) |
+                   ((input & 0x00FF000000000000UL) >> 40) |
+                   ((input & 0xFF00000000000000UL) >> 56);
         }
         #endregion
 
@@ -191,7 +192,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy1(pdst, &byteSrc);
             }
-            return 1U;
+            return sizeof(byte);
         }
 
         [MethodImpl(Inline)]
@@ -199,12 +200,11 @@ namespace Mirror.Buffers
         [MethodImpl(Inline)]
         public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, ushort ushortSrc)
         {
-            
             fixed (byte* pdst = &dst[dstOffset])
             {
                 UnsafeCopy2(pdst, (byte*)&ushortSrc);
             }
-            return 2U;
+            return sizeof(ushort);
         }
 
         [MethodImpl(Inline)]
@@ -216,7 +216,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy4(pdst, (byte*)&uintSrc);
             }
-            return 4U;
+            return sizeof(uint);
         }
 
         [MethodImpl(Inline)]
@@ -228,7 +228,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy8(pdst, (byte*)&ulongSrc);
             }
-            return 8U;
+            return sizeof(ulong);
         }
 
         [MethodImpl(Inline)]
@@ -238,7 +238,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy4(pdst, (byte*)&floatSrc);
             }
-            return 4U;
+            return sizeof(float);
         }
 
         [MethodImpl(Inline)]
@@ -248,7 +248,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy8(pdst, (byte*)&doubleSrc);
             }
-            return 8U;
+            return sizeof(double);
         }
 
         [MethodImpl(Inline)]
@@ -258,7 +258,7 @@ namespace Mirror.Buffers
             fixed (char* psrc = stringSrc)
             fixed (byte* pdst = &dst[dstOffset])
             {
-                written = (uint)Encoding.UTF8.GetBytes(psrc, stringSrc.Length, pdst, dst.Length - (int)dstOffset);
+                written = (uint)_encoding.GetBytes(psrc, stringSrc.Length, pdst, dst.Length - (int)dstOffset);
             }
             return written;
         }
@@ -316,7 +316,7 @@ namespace Mirror.Buffers
             {
                 boolDst = (*psrc == 0) ? false : true;
             }
-            return 1U;
+            return sizeof(byte);
         }
 
         [MethodImpl(Inline)]
@@ -327,7 +327,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy1((byte*)pdst, psrc);
             }
-            return 1U;
+            return sizeof(sbyte);
         }
 
         [MethodImpl(Inline)]
@@ -338,7 +338,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy1(pdst, psrc);
             }
-            return 1U;
+            return sizeof(byte);
         }
 
         [MethodImpl(Inline)]
@@ -349,7 +349,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy2((byte*)pdst, psrc);
             }
-            return 2U;
+            return sizeof(short);
         }
 
         [MethodImpl(Inline)]
@@ -360,7 +360,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy2((byte*)pdst, psrc);
             }
-            return 2U;
+            return sizeof(ushort);
         }
 
         [MethodImpl(Inline)]
@@ -371,7 +371,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy4((byte*)pdst, psrc);
             }
-            return 4U;
+            return sizeof(int);
         }
 
         [MethodImpl(Inline)]
@@ -382,7 +382,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy4((byte*)pdst, psrc);
             }
-            return 4U;
+            return sizeof(uint);
         }
 
         [MethodImpl(Inline)]
@@ -393,7 +393,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy8((byte*)pdst, psrc);
             }
-            return 8U;
+            return sizeof(long);
         }
 
         [MethodImpl(Inline)]
@@ -404,7 +404,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy8((byte*)pdst, psrc);
             }
-            return 8U;
+            return sizeof(ulong);
         }
 
         [MethodImpl(Inline)]
@@ -415,7 +415,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy4((byte*)pdst, psrc);
             }
-            return 4U;
+            return sizeof(float);
         }
 
         [MethodImpl(Inline)]
@@ -426,7 +426,7 @@ namespace Mirror.Buffers
             {
                 UnsafeCopy8((byte*)pdst, psrc);
             }
-            return 8U;
+            return sizeof(double);
         }
 
         [MethodImpl(Inline)]
@@ -434,7 +434,7 @@ namespace Mirror.Buffers
         {
             fixed (byte* psrc = &src[srcOffset])
             {
-                stringDst = Encoding.UTF8.GetString(psrc, byteLength);
+                stringDst = _encoding.GetString(psrc, byteLength);
             }
             return (uint)byteLength;
         }
@@ -442,5 +442,8 @@ namespace Mirror.Buffers
         [MethodImpl(Inline)]
         public static unsafe void UnsafeRead(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, int byteLength) => UnsafeWrite(src, srcOffset, dst, dstOffset, byteLength);
         #endregion
+
+        [MethodImpl(Inline)]
+        internal static uint StringByteCount(string stringSrc) => (uint) _encoding.GetByteCount(stringSrc);
     }
 }
