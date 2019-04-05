@@ -5,18 +5,11 @@ using System.Buffers;
 
 namespace Mirror.Buffers
 {
-    public interface IBufferAllocator
-    {
-        IBuffer Acquire(ulong minSizeInBytes);
-        IBuffer Reacquire(IBuffer buffer, ulong newMinSizeInBytes);
-        void Release(IBuffer buffer);
-    }
-
-    internal sealed class BufferAllocator : IBufferAllocator
+    public sealed class BufferAllocator : IBufferAllocator
     {
         Stack<Buffer> _bufferPool = new Stack<Buffer>();
         ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
-        public IBuffer Acquire(ulong minSizeInBytes = BufferConstants.DefaultBufferSize)
+        IBuffer IBufferAllocator.Acquire(ulong minSizeInBytes)
         {
             Buffer buffer;
             if (_bufferPool.Count > 0)
@@ -29,12 +22,12 @@ namespace Mirror.Buffers
             }
 
             byte[] bytes = _arrayPool.Rent((int) minSizeInBytes);
-            buffer.Setup(bytes, 0, (ulong) bytes.Length);
+            buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
 
             return buffer;
         }
 
-        public IBuffer Reacquire(IBuffer ibuffer, ulong newMinSizeInBytes)
+        IBuffer IBufferAllocator.Reacquire(IBuffer ibuffer, ulong newMinSizeInBytes)
         {
             if (ibuffer is Buffer buffer)
             {
@@ -51,7 +44,7 @@ namespace Mirror.Buffers
                 if (newMinSizeInBytes < buffer.Capacity) return buffer;
 
                 byte[] bytes = _arrayPool.Rent((int) newMinSizeInBytes);
-                buffer.Setup(bytes, 0, (ulong) bytes.Length);
+                buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
 
                 return ibuffer;
             }
@@ -61,7 +54,7 @@ namespace Mirror.Buffers
             }
         }
 
-        public void Release(IBuffer ibuffer)
+        void IBufferAllocator.Release(IBuffer ibuffer)
         {
             if (ibuffer is Buffer buffer)
             {

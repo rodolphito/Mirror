@@ -6,26 +6,9 @@ using System.Text;
 
 namespace Mirror.Buffers
 {
-    public interface IBuffer
-    {
-        void WriteByte(byte src);
-        void WriteUShort(ushort src);
-        void WriteUInt(uint src);
-        void WriteULong(ulong src);
-        void WriteFloat(float src);
-        void WriteDouble(double src);
-        void WriteString(string src);
-        byte ReadByte();
-        ushort ReadUShort();
-        uint ReadUInt();
-        ulong ReadULong();
-        float ReadFloat();
-        double ReadDouble();
-        string ReadString(uint length);
-    }
-
     internal sealed unsafe class Buffer : IBuffer
     {
+        IBufferAllocator _allocator;
         byte[] _buffer;
         ulong _offset;
         ulong _position;
@@ -53,8 +36,9 @@ namespace Mirror.Buffers
         {
         }
 
-        internal void Setup(byte[] buf, ulong offset, ulong capacity)
+        internal void Setup(IBufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
         {
+            _allocator = allocator;
             _buffer = buf;
             _offset = offset;
             _position = 0;
@@ -70,7 +54,7 @@ namespace Mirror.Buffers
             if (newPos > Capacity)
             {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-                BufferManager.ReacquireBuffer(this, Capacity << 1);
+                _allocator.Reacquire(this, Capacity << 1);
 #else
                 throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer capacity");
 #endif
