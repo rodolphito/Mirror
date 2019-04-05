@@ -140,8 +140,8 @@ namespace Mirror.Buffers
         [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy3(byte* pdst, byte* psrc)
         {
-            *(ushort*)pdst = *(ushort*)psrc;
-            *(pdst + sizeof(short)) = *(psrc + sizeof(short));
+            *(ushort*)(pdst + 0) = *(ushort*)(psrc + 0);
+            *(ushort*)(pdst + 1) = *(ushort*)(psrc + 1);
         }
 
         [MethodImpl(Inline)]
@@ -153,23 +153,22 @@ namespace Mirror.Buffers
         [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy5(byte* pdst, byte* psrc)
         {
-            *(uint*)pdst = *(uint*)psrc;
-            *(pdst + sizeof(int)) = *(psrc + sizeof(int));
+            *(uint*)(pdst + 0) = *(uint*)(psrc + 0);
+            *(uint*)(pdst + 1) = *(uint*)(psrc + 1);
         }
 
         [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy6(byte* pdst, byte* psrc)
         {
-            *(uint*)pdst = *(uint*)psrc;
-            *(ushort*)(pdst + sizeof(int)) = *(ushort*)(psrc + sizeof(int));
+            *(uint*)(pdst + 0) = *(uint*)(psrc + 0);
+            *(uint*)(pdst + 2) = *(uint*)(psrc + 2);
         }
 
         [MethodImpl(Inline)]
         public static unsafe void UnsafeCopy7(byte* pdst, byte* psrc)
         {
-            *(uint*)pdst = *(uint*)psrc;
-            *(ushort*)(pdst + sizeof(int)) = *(ushort*)(psrc + sizeof(int));
-            *(pdst + sizeof(int) + sizeof(short)) = *(psrc + sizeof(int) + sizeof(short));
+            *(uint*)(pdst + 0) = *(uint*)(psrc + 0);
+            *(uint*)(pdst + 3) = *(uint*)(psrc + 3);
         }
 
         [MethodImpl(Inline)]
@@ -181,82 +180,91 @@ namespace Mirror.Buffers
 
         #region UnsafeWrite: unsafe binary writing using fixed pinning
         [MethodImpl(Inline)]
-        public static void UnsafeWrite(byte[] dst, int dstOffset, bool boolSrc) => UnsafeWrite(dst, dstOffset, (byte)(boolSrc ? 1 : 0));
+        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, bool boolSrc) => UnsafeWrite(dst, dstOffset, (byte)(boolSrc ? 1 : 0));
 
         [MethodImpl(Inline)]
-        public static void UnsafeWrite(byte[] dst, int dstOffset, sbyte sbyteSrc) => UnsafeWrite(dst, dstOffset, (byte)sbyteSrc);
+        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, sbyte sbyteSrc) => UnsafeWrite(dst, dstOffset, (byte)sbyteSrc);
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, byte byteSrc)
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, byte byteSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
             {
-                *pdst = byteSrc;
+                UnsafeCopy1(pdst, &byteSrc);
             }
+            return 1U;
         }
 
         [MethodImpl(Inline)]
-        public static void UnsafeWrite(byte[] dst, int dstOffset, short shortSrc) => UnsafeWrite(dst, dstOffset, (ushort)shortSrc);
+        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, short shortSrc) => UnsafeWrite(dst, dstOffset, (ushort)shortSrc);
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, ushort ushortSrc)
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, ushort ushortSrc)
+        {
+            
+            fixed (byte* pdst = &dst[dstOffset])
+            {
+                UnsafeCopy2(pdst, (byte*)&ushortSrc);
+            }
+            return 2U;
+        }
+
+        [MethodImpl(Inline)]
+        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, int intSrc) => UnsafeWrite(dst, dstOffset, (uint)intSrc);
+        [MethodImpl(Inline)]
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, uint uintSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
             {
-                *(ushort*)pdst = ushortSrc;
+                UnsafeCopy4(pdst, (byte*)&uintSrc);
             }
+            return 4U;
         }
 
         [MethodImpl(Inline)]
-        public static void UnsafeWrite(byte[] dst, int dstOffset, int intSrc) => UnsafeWrite(dst, dstOffset, (uint)intSrc);
+        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, long longSrc) => UnsafeWrite(dst, dstOffset, (ulong)longSrc);
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, uint uintSrc)
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, ulong ulongSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
             {
-                *(uint*)pdst = uintSrc;
+                UnsafeCopy8(pdst, (byte*)&ulongSrc);
             }
+            return 8U;
         }
 
         [MethodImpl(Inline)]
-        public static void UnsafeWrite(byte[] dst, int dstOffset, long longSrc) => UnsafeWrite(dst, dstOffset, (ulong)longSrc);
-        [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, ulong ulongSrc)
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, float floatSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
             {
-                *(ulong*)pdst = ulongSrc;
+                UnsafeCopy4(pdst, (byte*)&floatSrc);
             }
+            return 4U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, float floatSrc)
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, double doubleSrc)
         {
             fixed (byte* pdst = &dst[dstOffset])
             {
-                *(float*)pdst = floatSrc;
+                UnsafeCopy8(pdst, (byte*)&doubleSrc);
             }
+            return 8U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, double doubleSrc)
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, string stringSrc)
         {
+            uint written = 0;
+            fixed (char* psrc = stringSrc)
             fixed (byte* pdst = &dst[dstOffset])
             {
-                *(double*)pdst = doubleSrc;
+                written = (uint)Encoding.UTF8.GetBytes(psrc, stringSrc.Length, pdst, dst.Length - (int)dstOffset);
             }
+            return written;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, string stringSrc)
-        {
-            fixed (char* s = stringSrc)
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                Encoding.UTF8.GetBytes(s, stringSrc.Length, pdst, stringSrc.Length);
-            }
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe void UnsafeWrite(byte[] dst, int dstOffset, byte[] src, int srcOffset, int byteLength)
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, int byteLength)
         {
             int longWriteLimit = (int)(byteLength & 0xfffffff8);
             fixed (byte* psrc = &src[srcOffset])
@@ -296,130 +304,143 @@ namespace Mirror.Buffers
                         break;
                 }
             }
+            return (uint)byteLength;
         }
         #endregion
 
         #region UnsafeRead: unsafe binary reading using fixed pinning
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref bool boolDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out bool boolDst, byte[] src, ulong srcOffset)
         {
             fixed (byte* psrc = &src[srcOffset])
             {
                 boolDst = (*psrc == 0) ? false : true;
             }
+            return 1U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref sbyte sbyteDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out sbyte sbyteDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &sbyteDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy1((byte*)pdst, psrc);
             }
+            return 1U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref byte byteDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out byte byteDst, byte[] src, ulong srcOffset)
         {
             fixed (byte* pdst = &byteDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy1(pdst, psrc);
             }
+            return 1U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref short shortDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out short shortDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &shortDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy2((byte*)pdst, psrc);
             }
+            return 2U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref ushort ushortDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out ushort ushortDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &ushortDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy2((byte*)pdst, psrc);
             }
+            return 2U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref int intSrc, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out int intSrc, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &intSrc)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy4((byte*)pdst, psrc);
             }
+            return 4U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref uint uintDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out uint uintDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &uintDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy4((byte*)pdst, psrc);
             }
+            return 4U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref long longDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out long longDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &longDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy8((byte*)pdst, psrc);
             }
+            return 8U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref ulong ulongDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out ulong ulongDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &ulongDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy8((byte*)pdst, psrc);
             }
+            return 8U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref float floatDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out float floatDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &floatDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy4((byte*)pdst, psrc);
             }
+            return 4U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref double doubleDst, byte[] src, int srcOffset)
+        public static unsafe uint UnsafeRead(out double doubleDst, byte[] src, ulong srcOffset)
         {
             fixed (void* pdst = &doubleDst)
             fixed (byte* psrc = &src[srcOffset])
             {
                 UnsafeCopy8((byte*)pdst, psrc);
             }
+            return 8U;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(ref string stringDst, byte[] src, int srcOffset, int byteLength)
+        public static unsafe uint UnsafeRead(out string stringDst, byte[] src, ulong srcOffset, int byteLength)
         {
             fixed (byte* psrc = &src[srcOffset])
             {
                 stringDst = Encoding.UTF8.GetString(psrc, byteLength);
             }
+            return (uint)byteLength;
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(byte[] dst, int dstOffset, byte[] src, int srcOffset, int byteLength) => UnsafeWrite(src, srcOffset, dst, dstOffset, byteLength);
+        public static unsafe void UnsafeRead(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, int byteLength) => UnsafeWrite(src, srcOffset, dst, dstOffset, byteLength);
         #endregion
     }
 }

@@ -34,7 +34,20 @@ namespace Mirror.Buffers
 
         internal ulong Capacity { get; private set; }
 
-        //public int Position { get { return _position; } set { writer.BaseStream.Position = value; } }
+        public ulong Position
+        {
+            get
+            {
+                return _position;
+            }
+            set
+            {
+#if MIRROR_BUFFER_CHECK_BOUNDS
+                CheckPosition(value);
+#endif
+                _position = value;
+            }
+        }
 
         internal Buffer()
         {
@@ -73,6 +86,14 @@ namespace Mirror.Buffers
                 throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer length");
             }
         }
+
+        void CheckPosition(ulong newPosition)
+        {
+            if (newPosition > _length)
+            {
+                throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer length");
+            }
+        }
 #endif
 
         void UpdateWrite(uint addToPos)
@@ -84,7 +105,6 @@ namespace Mirror.Buffers
         void UpdateRead(uint addToPos)
         {
             _position += addToPos;
-            // Bounds check is not needed here; we already checked before doing the read.
         }
 
         unsafe void IBuffer.WriteByte(byte src)
@@ -92,11 +112,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckWrite(sizeof(byte));
 #endif
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                *dst = src;
-            }
-            UpdateWrite(sizeof(byte));
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
         unsafe void IBuffer.WriteUShort(ushort src)
@@ -104,11 +120,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckWrite(sizeof(ushort));
 #endif
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                *(ushort*)dst = src;
-            }
-            UpdateWrite(sizeof(ushort));
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
         unsafe void IBuffer.WriteUInt(uint src)
@@ -116,11 +128,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckWrite(sizeof(uint));
 #endif
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                *(uint*)dst = src;
-            }
-            UpdateWrite(sizeof(uint));
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
         unsafe void IBuffer.WriteULong(ulong src)
@@ -128,11 +136,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckWrite(sizeof(ulong));
 #endif
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                *(ulong*)dst = src;
-            }
-            UpdateWrite(sizeof(ulong));
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
         unsafe void IBuffer.WriteFloat(float src)
@@ -140,11 +144,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckWrite(sizeof(float));
 #endif
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                *(float*)dst = src;
-            }
-            UpdateWrite(sizeof(float));
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
         unsafe void IBuffer.WriteDouble(double src)
@@ -152,11 +152,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckWrite(sizeof(double));
 #endif
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                *(double*)dst = src;
-            }
-            UpdateWrite(sizeof(double));
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
         unsafe void IBuffer.WriteString(string src)
@@ -164,14 +160,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckWrite((uint) _encoding.GetByteCount(src));
 #endif
-            uint written;
-
-            fixed (char* s = src)
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                written = (uint) _encoding.GetBytes(s, src.Length, dst, (int) (Capacity - _position));
-            }
-            UpdateWrite(written);
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
         unsafe byte IBuffer.ReadByte()
@@ -179,12 +168,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckRead(sizeof(byte));
 #endif
-            byte dst;
-            fixed (byte* src = &_buffer[_offset + _position])
-            {
-                dst = *src;
-            }
-            UpdateRead(sizeof(byte));
+            UpdateRead(BufferUtil.UnsafeRead(out byte dst, _buffer, _offset + _position));
             return dst;
         }
 
@@ -193,12 +177,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckRead(sizeof(ushort));
 #endif
-            ushort dst;
-            fixed (byte* src = &_buffer[_offset + _position])
-            {
-                dst = *(ushort*)src;
-            }
-            UpdateRead(sizeof(ushort));
+            UpdateRead(BufferUtil.UnsafeRead(out ushort dst, _buffer, _offset + _position));
             return dst;
         }
 
@@ -207,12 +186,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckRead(sizeof(uint));
 #endif
-            uint dst;
-            fixed (byte* src = &_buffer[_offset + _position])
-            {
-                dst = *(uint*)src;
-            }
-            UpdateRead(sizeof(uint));
+            UpdateRead(BufferUtil.UnsafeRead(out uint dst, _buffer, _offset + _position));
             return dst;
         }
 
@@ -221,12 +195,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckRead(sizeof(ulong));
 #endif
-            ulong dst;
-            fixed (byte* src = &_buffer[_offset + _position])
-            {
-                dst = *(ulong*)src;
-            }
-            UpdateRead(sizeof(ulong));
+            UpdateRead(BufferUtil.UnsafeRead(out ulong dst, _buffer, _offset + _position));
             return dst;
         }
 
@@ -235,12 +204,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckRead(sizeof(float));
 #endif
-            float dst;
-            fixed (byte* src = &_buffer[_offset + _position])
-            {
-                dst = *(float*)src;
-            }
-            UpdateRead(sizeof(float));
+            UpdateRead(BufferUtil.UnsafeRead(out float dst, _buffer, _offset + _position));
             return dst;
         }
 
@@ -249,29 +213,16 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_CHECK_BOUNDS
             CheckRead(sizeof(double));
 #endif
-            double dst;
-            fixed (byte* src = &_buffer[_offset + _position])
-            {
-                dst = *(double*)src;
-            }
-            UpdateRead(sizeof(double));
+            UpdateRead(BufferUtil.UnsafeRead(out double dst, _buffer, _offset + _position));
             return dst;
         }
 
         unsafe string IBuffer.ReadString(uint length)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
-            //CheckRead((uint) _encoding.GetByteCount(src));
+            CheckRead(length);
 #endif
-            //uint written;
-
-            string dst = "c6 can you please figure this out";
-            /*fixed (char* src = src)
-            fixed (byte* dst = &_buffer[_offset + _position])
-            {
-                written = (uint) _encoding.GetBytes(s, src.Length, dst, (int) (Capacity - _position));
-            }
-            UpdateRead(written);*/
+            UpdateRead(BufferUtil.UnsafeRead(out string dst, _buffer, _offset + _position, (int)length));
             return dst;
         }
     }
