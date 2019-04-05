@@ -42,7 +42,7 @@ namespace Mirror
         {
             try
             {
-                return reader.ReadBoolean() ? reader.ReadString() : null; // null support, see NetworkWriter
+                return ReadBoolean() ? reader.ReadString() : null; // null support, see NetworkWriter
             }
             catch (ArgumentException invalidByteSequence)
             {
@@ -59,11 +59,11 @@ namespace Mirror
         public byte[] ReadBytesAndSize()
         {
             // notNull? (see NetworkWriter)
-            bool notNull = reader.ReadBoolean();
+            bool notNull = ReadBoolean();
             if (notNull)
             {
                 uint size = ReadPackedUInt32();
-                return reader.ReadBytes((int)size);
+                return ReadBytes((int)size);
             }
             return null;
         }
@@ -237,7 +237,7 @@ namespace Mirror
 
         public Guid ReadGuid()
         {
-            byte[] bytes = reader.ReadBytes(16);
+            byte[] bytes = ReadBytes(16);
             return new Guid(bytes);
         }
 
