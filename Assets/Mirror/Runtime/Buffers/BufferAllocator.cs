@@ -5,13 +5,6 @@ using System.Buffers;
 
 namespace Mirror.Buffers
 {
-    public interface IBufferAllocator
-    {
-        IBuffer Acquire(ulong minSizeInBytes);
-        IBuffer Reacquire(IBuffer buffer, ulong newMinSizeInBytes);
-        void Release(IBuffer buffer);
-    }
-
     internal sealed class BufferAllocator : IBufferAllocator
     {
         Stack<Buffer> _bufferPool = new Stack<Buffer>();
