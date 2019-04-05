@@ -163,6 +163,10 @@ namespace Mirror.Buffers
                 reader = new NetworkReader(buffer);
                 _readerList.Add(reader);
             }
+            else
+            {
+                // TODO: insert buffer into reader
+            }
             return reader;
         }
 
