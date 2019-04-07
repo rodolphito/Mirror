@@ -2,6 +2,7 @@
     "name": "Mirror.Tests",
     "references": [
         "Mirror",
+        "Mirror.Buffers",
         "Mirror.Weaver"
     ],
     "optionalUnityReferences": [

@@ -14,28 +14,28 @@ namespace Mirror.Buffers
         #region Min and Max: non-branching
         // from http://www.coranac.com/documents/bittrick/
         [MethodImpl(Inline)]
-        public static byte Min(byte x, byte y) => (byte) (y + ((x - y) & (x - y) >> (sizeof(byte) * 8 - 1)));
+        public static byte Min(byte x, byte y) => x < y ? x : y;
 
         [MethodImpl(Inline)]
-        public static byte Max(byte x, byte y) => (byte) (x - ((x - y) & (x - y) >> (sizeof(byte) * 8 - 1)));
+        public static byte Max(byte x, byte y) => x > y ? x : y;
 
         [MethodImpl(Inline)]
-        public static ushort Min(ushort x, ushort y) => (ushort) (y + ((x - y) & (x - y) >> (sizeof(ushort) * 8 - 1)));
+        public static ushort Min(ushort x, ushort y) => x < y ? x : y;
 
         [MethodImpl(Inline)]
-        public static ushort Max(ushort x, ushort y) => (ushort) (x - ((x - y) & (x - y) >> (sizeof(ushort) * 8 - 1)));
+        public static ushort Max(ushort x, ushort y) => x > y ? x : y;
 
         [MethodImpl(Inline)]
-        public static uint Min(uint x, uint y) => (uint) (y + ((x - y) & (x - y) >> (sizeof(uint) * 8 - 1)));
+        public static uint Min(uint x, uint y) => x < y ? x : y;
 
         [MethodImpl(Inline)]
-        public static uint Max(uint x, uint y) => (uint) (x - ((x - y) & (x - y) >> (sizeof(uint) * 8 - 1)));
+        public static uint Max(uint x, uint y) => x > y ? x : y;
 
         [MethodImpl(Inline)]
-        public static ulong Min(ulong x, ulong y) => (ulong) (y + ((x - y) & (x - y) >> (sizeof(ulong) * 8 - 1)));
+        public static ulong Min(ulong x, ulong y) => x < y ? x : y;
 
         [MethodImpl(Inline)]
-        public static ulong Max(ulong x, ulong y) => (ulong) (x - ((x - y) & (x - y) >> (sizeof(ulong) * 8 - 1)));
+        public static ulong Max(ulong x, ulong y) => x > y ? x : y;
         #endregion
 
         #region NextPow2: rounding up to closest power of two
@@ -264,20 +264,20 @@ namespace Mirror.Buffers
         }
 
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, int byteLength)
+        public static unsafe ulong UnsafeWrite(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, ulong byteLength)
         {
-            int longWriteLimit = (int)(byteLength & 0xfffffff8);
+            ulong longWriteLimit = byteLength & ~7ul;
             fixed (byte* psrc = &src[srcOffset])
             fixed (byte* pdst = &dst[dstOffset])
             {
                 // write anything over 8 bytes as a series of long*
-                for (int cursor = 0; cursor < longWriteLimit; cursor += sizeof(long))
+                for (ulong cursor = 0; cursor < longWriteLimit; cursor += sizeof(long))
                 {
                     UnsafeCopy8(pdst + cursor, psrc + cursor);
                 }
 
                 // write anything remaining under 8 bytes
-                switch (byteLength & 0x00000007)
+                switch (byteLength & 7ul)
                 {
                     case 0:
                         break;
@@ -304,7 +304,7 @@ namespace Mirror.Buffers
                         break;
                 }
             }
-            return (uint)byteLength;
+            return byteLength;
         }
         #endregion
 
@@ -440,7 +440,7 @@ namespace Mirror.Buffers
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeRead(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, int byteLength) => UnsafeWrite(src, srcOffset, dst, dstOffset, byteLength);
+        public static unsafe ulong UnsafeRead(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, ulong byteLength) => UnsafeWrite(src, srcOffset, dst, dstOffset, byteLength);
         #endregion
 
         [MethodImpl(Inline)]
