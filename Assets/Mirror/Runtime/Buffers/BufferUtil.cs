@@ -262,13 +262,13 @@ namespace Mirror.Buffers
         public static unsafe ulong UnsafeWrite(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, ulong byteLength)
         {
             ulong longWriteLimit = byteLength & ~7ul;
-            fixed (byte* psrc = &src[srcOffset])
-            fixed (byte* pdst = &dst[dstOffset])
+            fixed (byte* psrc = src)
+            fixed (byte* pdst = dst)
             {
                 // write anything over 8 bytes as a series of long*
                 for (ulong cursor = 0; cursor < longWriteLimit; cursor += sizeof(long))
                 {
-                    UnsafeCopy8(pdst + cursor, psrc + cursor);
+                    UnsafeCopy8(pdst + dstOffset + cursor, psrc + srcOffset + cursor);
                 }
 
                 // write anything remaining under 8 bytes
@@ -277,25 +277,25 @@ namespace Mirror.Buffers
                     case 0:
                         break;
                     case 1:
-                        UnsafeCopy1(pdst + longWriteLimit, psrc + longWriteLimit);
+                        UnsafeCopy1(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
                         break;
                     case 2:
-                        UnsafeCopy2(pdst + longWriteLimit, psrc + longWriteLimit);
+                        UnsafeCopy2(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
                         break;
                     case 3:
-                        UnsafeCopy3(pdst + longWriteLimit, psrc + longWriteLimit);
+                        UnsafeCopy3(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
                         break;
                     case 4:
-                        UnsafeCopy4(pdst + longWriteLimit, psrc + longWriteLimit);
+                        UnsafeCopy4(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
                         break;
                     case 5:
-                        UnsafeCopy5(pdst + longWriteLimit, psrc + longWriteLimit);
+                        UnsafeCopy5(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
                         break;
                     case 6:
-                        UnsafeCopy6(pdst + longWriteLimit, psrc + longWriteLimit);
+                        UnsafeCopy6(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
                         break;
                     case 7:
-                        UnsafeCopy7(pdst + longWriteLimit, psrc + longWriteLimit);
+                        UnsafeCopy7(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
                         break;
                 }
             }
