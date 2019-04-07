@@ -39,7 +39,6 @@ namespace Mirror.Buffers
         #endregion
 
         #region NextPow2: rounding up to closest power of two
-        public static sbyte NextPow2(sbyte val) => (sbyte)NextPow2((byte)val);
         public static byte NextPow2(byte val)
         {
             val = Max(val, 1);
@@ -51,7 +50,6 @@ namespace Mirror.Buffers
             return val;
         }
 
-        public static short NextPow2(short val) => (short)NextPow2((ushort)val);
         public static ushort NextPow2(ushort val)
         {
             val = Max(val, 1);
@@ -64,7 +62,6 @@ namespace Mirror.Buffers
             return val;
         }
 
-        public static int NextPow2(int val) => (int)NextPow2((uint)val);
         public static uint NextPow2(uint val)
         {
             val = Max(val, 1);
@@ -78,7 +75,6 @@ namespace Mirror.Buffers
             return val;
         }
 
-        public static long NextPow2(long val) => (long)NextPow2((ulong)val);
         public static ulong NextPow2(ulong val)
         {
             val = Max(val, 1);

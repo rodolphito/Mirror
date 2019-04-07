@@ -116,42 +116,6 @@ namespace Mirror.Tests
         }
 
         [Test]
-        public void TestNextPowerOfTwoSByte()
-        {
-            sbyte[] input  = new sbyte[]{0,1,2,5, 9,127,-1,-2,-5, -9,-127};
-            sbyte[] expect = new sbyte[]{1,1,2,8,16,  0,-1,-2,-8,-16,-128};
-            for (int i = 0; i < input.Length; i++)
-                Assert.That(BufferUtil.NextPow2(input[i]), Is.EqualTo(expect[i]));
-        }
-
-        [Test]
-        public void TestNextPowerOfTwoShort()
-        {
-            short[] input  = new short[]{0,1,2,5, 9,127,128,129,253,254,255,1000,4000,-1,-2,-5, -9,-127,-128,-129,-253,-254,-255,-1000,-4000};
-            short[] expect = new short[]{1,1,2,8,16,128,128,256,256,256,256,1024,4096,-1,-2,-8,-16,-128,-128,-256,-256,-256,-256,-1024,-4096};
-            for (int i = 0; i < input.Length; i++)
-                Assert.That(BufferUtil.NextPow2(input[i]), Is.EqualTo(expect[i]));
-        }
-
-        [Test]
-        public void TestNextPowerOfTwoInt()
-        {
-            int[] input  = new int[]{0,1,2,5, 9,127,128,129,253,254,255,1000,4000,60000,-1,-2,-5, -9,-127,-128,-129,-253,-254,-255,-1000,-4000,-60000};
-            int[] expect = new int[]{1,1,2,8,16,128,128,256,256,256,256,1024,4096,65536,-1,-2,-8,-16,-128,-128,-256,-256,-256,-256,-1024,-4096,-65536};
-            for (int i = 0; i < input.Length; i++)
-                Assert.That(BufferUtil.NextPow2(input[i]), Is.EqualTo(expect[i]));
-        }
-
-        [Test]
-        public void TestNextPowerOfTwoLong()
-        {
-            long[] input  = new long[]{0,1,2,5, 9,127,128,129,253,254,255,1000,4000,60000,-1,-2,-5, -9,-127,-128,-129,-253,-254,-255,-1000,-4000,-60000};
-            long[] expect = new long[]{1,1,2,8,16,128,128,256,256,256,256,1024,4096,65536,-1,-2,-8,-16,-128,-128,-256,-256,-256,-256,-1024,-4096,-65536};
-            for (int i = 0; i < input.Length; i++)
-                Assert.That(BufferUtil.NextPow2(input[i]), Is.EqualTo(expect[i]));
-        }
-
-        [Test]
         public void TestSwapBytesUShort()
         {
             ushort[] input  = new ushort[]{0x0000,0x0001,0x0002,0x0ab0,0xab0a,0xf0e0,0xffff,0xabcd};
