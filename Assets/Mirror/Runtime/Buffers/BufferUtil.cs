@@ -12,7 +12,6 @@ namespace Mirror.Buffers
         const MethodImplOptions Inline = MethodImplOptions.AggressiveInlining;
         static Encoding _encoding = new UTF8Encoding(false);
         #region Min and Max: non-branching
-        // from http://www.coranac.com/documents/bittrick/
         [MethodImpl(Inline)]
         public static byte Min(byte x, byte y) => x < y ? x : y;
 
