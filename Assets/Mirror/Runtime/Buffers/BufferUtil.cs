@@ -12,7 +12,6 @@ namespace Mirror.Buffers
         const MethodImplOptions Inline = MethodImplOptions.AggressiveInlining;
         static Encoding _encoding = new UTF8Encoding(false);
         #region Min and Max: non-branching
-        // from http://www.coranac.com/documents/bittrick/
         [MethodImpl(Inline)]
         public static byte Min(byte x, byte y) => x < y ? x : y;
 
@@ -91,14 +90,14 @@ namespace Mirror.Buffers
         #endregion
 
         #region SwapBytes: endian swapping
-        public static short SwapBytes(short input) => (short)SwapBytes((ushort)input);
+        [MethodImpl(Inline)]
         public static ushort SwapBytes(ushort input)
         {
             return (ushort)(((input & 0x00FFU) << 8) |
                             ((input & 0xFF00U) >> 8));
         }
 
-        public static int SwapBytes(int input) => (int)SwapBytes((uint)input);
+        [MethodImpl(Inline)]
         public static uint SwapBytes(uint input)
         {
             return ((input & 0x000000FFU) << 24) |
@@ -107,7 +106,7 @@ namespace Mirror.Buffers
                    ((input & 0xFF000000U) >> 24);
         }
 
-        public static long SwapBytes(long input) => (long)SwapBytes((ulong)input);
+        [MethodImpl(Inline)]
         public static ulong SwapBytes(ulong input)
         {
             return ((input & 0x00000000000000FFUL) << 56) |
