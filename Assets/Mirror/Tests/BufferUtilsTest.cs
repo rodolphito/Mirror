@@ -190,9 +190,146 @@ namespace Mirror.Tests
         }
 
         [Test]
-        public void TestReadAndWrite()
+        public void TestReadAndWriteBool()
         {
-            
+            bool[] inputs = new bool[]{};
+            foreach (bool input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out bool output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteSByte()
+        {
+            sbyte[] inputs = new sbyte[]{0,1,2,3,-1,-2,-3,126,127,-127,-128};
+            foreach (sbyte input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out sbyte output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteByte()
+        {
+            byte[] inputs = new byte[]{0,1,2,3,253,254,255};
+            foreach (byte input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out byte output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteShort()
+        {
+            short[] inputs = new short[]{0,1,2,-1,-2,257,-257,short.MaxValue,short.MinValue};
+            foreach (short input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out short output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteUShort()
+        {
+            ushort[] inputs = new ushort[]{0,1,2,3,257,0xFFFE,0xFFFF,0xabcd};
+            foreach (ushort input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out ushort output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteInt()
+        {
+            int[] inputs = new int[]{0,1,2,-1,-2,257,-257,123456789,-123456789};
+            foreach (int input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out int output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteUInt()
+        {
+            uint[] inputs = new uint[]{0,1,2,257,123456789,~0u,0xC0FFEE};
+            foreach (uint input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out uint output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteLong()
+        {
+            long[] inputs = new long[]{0,1,2,-1,-2,257,-1233456789,123456789,0xDEAD_C0FFEE_FEEL};
+            foreach (long input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out long output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteULong()
+        {
+            ulong[] inputs = new ulong[]{0,1,2,257,~0ul,123456789,0xDEAD_C0FFEE_FEEL};
+            foreach (ulong input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out ulong output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteFloat()
+        {
+            float[] inputs = new float[]{0f,0.1f,1f,(float)Math.PI,float.PositiveInfinity,float.NaN,1.0f/3.0f};
+            foreach (float input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out float output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
+        }
+
+        [Test]
+        public void TestReadAndWriteDouble()
+        {
+            double[] inputs = new double[]{0d,0.1,Math.PI,Math.E,double.PositiveInfinity,double.NaN,1.0/3.0};
+            foreach (double input in inputs)
+            {
+                byte[] src = new byte[32];
+                BufferUtil.UnsafeWrite(src, 0, input);
+                BufferUtil.UnsafeRead(out double output, src, 0);
+                Assert.That(output, Is.EqualTo(input));
+            }
         }
 
         [Test]
