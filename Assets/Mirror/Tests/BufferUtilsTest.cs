@@ -192,7 +192,7 @@ namespace Mirror.Tests
         [Test]
         public void TestReadAndWriteBool()
         {
-            bool[] inputs = new bool[]{};
+            bool[] inputs = new bool[]{true, false};
             foreach (bool input in inputs)
             {
                 for (ulong i = 0; i < 10; i++)
