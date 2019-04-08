@@ -22,7 +22,6 @@ namespace Mirror
         [SerializeField] bool m_ServerOnly;
         [SerializeField] bool m_LocalPlayerAuthority;
         bool m_IsServer;
-        NetworkBehaviour[] networkBehaviours;
 
         // member used to mark a identity for future reset
         // check MarkForReset for more information.
@@ -53,7 +52,7 @@ namespace Mirror
         // all spawned NetworkIdentities by netId. needed on server and client.
         public static readonly Dictionary<uint, NetworkIdentity> spawned = new Dictionary<uint, NetworkIdentity>();
 
-        public NetworkBehaviour[] NetworkBehaviours => networkBehaviours = networkBehaviours ?? GetComponents<NetworkBehaviour>();
+        public NetworkBehaviour[] NetworkBehaviours { get; private set; }
 
         // the AssetId trick:
         // - ideally we would have a serialized 'Guid m_AssetId' but Unity can't
@@ -176,6 +175,11 @@ namespace Mirror
                 {
                     sceneIds[sceneId] = this;
                 }
+            }
+            NetworkBehaviours = GetComponents<NetworkBehaviour>();
+            if (NetworkBehaviours.Length > 64)
+            {
+                Debug.LogError("Only 64 NetworkBehaviour components are allowed for NetworkIdentity: " + name + " because of the dirtyComponentMask");
             }
         }
 
@@ -447,12 +451,6 @@ namespace Mirror
 
         void OnStartAuthority()
         {
-            if (networkBehaviours == null)
-            {
-                Debug.LogError("Network object " + name + " not initialized properly. Do you have more than one NetworkIdentity in the same object? Did you forget to spawn this object with NetworkServer?", this);
-                return;
-            }
-
             foreach (NetworkBehaviour comp in NetworkBehaviours)
             {
                 try
@@ -558,22 +556,26 @@ namespace Mirror
         // -> returns serialized data of everything dirty,  null if nothing was dirty
         internal byte[] OnSerializeAllSafely(bool initialState)
         {
-            // reset cached writer length and position
-            onSerializeWriter.SetLength(0);
-
-            if (networkBehaviours.Length > 64)
+            // loop through all components only once and then write dirty+payload into the writer afterwards
+            ulong dirtyComponentsMask = 0L;
+            for (int i = 0; i < NetworkBehaviours.Length; ++i)
             {
-                Debug.LogError("Only 64 NetworkBehaviour components are allowed for NetworkIdentity: " + name + " because of the dirtyComponentMask");
-                return null;
+                NetworkBehaviour comp = NetworkBehaviours[i];
+                if (initialState || comp.IsDirty())
+                {
+                    dirtyComponentsMask |= (ulong)(1L << i);
+                }
             }
-            ulong dirtyComponentsMask = GetDirtyMask(networkBehaviours, initialState);
 
             if (dirtyComponentsMask == 0L)
                 return null;
 
+            // reset cached writer length and position
+            onSerializeWriter.SetLength(0);
+
             onSerializeWriter.WritePackedUInt64(dirtyComponentsMask); // WritePacked64 so we don't write full 8 bytes if we don't have to
 
-            foreach (NetworkBehaviour comp in networkBehaviours)
+            foreach (NetworkBehaviour comp in NetworkBehaviours)
             {
                 // is this component dirty?
                 // -> always serialize if initialState so all components are included in spawn packet
@@ -594,22 +596,6 @@ namespace Mirror
             }
 
             return onSerializeWriter.ToArray();
-        }
-
-        ulong GetDirtyMask(NetworkBehaviour[] components, bool initialState)
-        {
-            // loop through all components only once and then write dirty+payload into the writer afterwards
-            ulong dirtyComponentsMask = 0L;
-            for (int i = 0; i < components.Length; ++i)
-            {
-                NetworkBehaviour comp = components[i];
-                if (initialState || comp.IsDirty())
-                {
-                    dirtyComponentsMask |= (ulong)(1L << i);
-                }
-            }
-
-            return dirtyComponentsMask;
         }
 
         void OnDeserializeSafely(NetworkBehaviour comp, NetworkReader reader, bool initialState)
@@ -680,9 +666,9 @@ namespace Mirror
             }
 
             // find the right component to invoke the function on
-            if (0 <= componentIndex && componentIndex < networkBehaviours.Length)
+            if (0 <= componentIndex && componentIndex < NetworkBehaviours.Length)
             {
-                NetworkBehaviour invokeComponent = networkBehaviours[componentIndex];
+                NetworkBehaviour invokeComponent = NetworkBehaviours[componentIndex];
                 if (!invokeComponent.InvokeHandlerDelegate(functionHash, invokeType, reader))
                 {
                     Debug.LogError("Found no receiver for incoming " + invokeType + " [" + functionHash + "] on " + gameObject + ",  the server and client should have the same NetworkBehaviour instances [netId=" + netId + "].");
@@ -730,7 +716,7 @@ namespace Mirror
                 hasAuthority = true;
             }
 
-            foreach (NetworkBehaviour comp in networkBehaviours)
+            foreach (NetworkBehaviour comp in NetworkBehaviours)
             {
                 comp.OnStartLocalPlayer();
 
@@ -743,9 +729,9 @@ namespace Mirror
 
         internal void OnNetworkDestroy()
         {
-            for (int i = 0; networkBehaviours != null && i < networkBehaviours.Length; i++)
+            for (int i = 0; NetworkBehaviours != null && i < NetworkBehaviours.Length; i++)
             {
-                NetworkBehaviour comp = networkBehaviours[i];
+                NetworkBehaviour comp = NetworkBehaviours[i];
                 comp.OnNetworkDestroy();
             }
             m_IsServer = false;
@@ -994,7 +980,6 @@ namespace Mirror
             isLocalPlayer = false;
             connectionToServer = null;
             connectionToClient = null;
-            networkBehaviours = null;
 
             ClearObservers();
             clientAuthorityOwner = null;

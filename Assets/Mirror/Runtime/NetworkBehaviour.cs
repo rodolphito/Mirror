@@ -435,26 +435,18 @@ namespace Mirror
             }
         }
 
-        bool AnySyncObjectDirty()
-        {
-            // note: don't use Linq here. 1200 networked objects:
-            //   Linq: 187KB GC/frame;, 2.66ms time
-            //   for: 8KB GC/frame; 1.28ms time
-            for (int i = 0; i < syncObjects.Count; ++i)
-            {
-                if (syncObjects[i].IsDirty)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         internal bool IsDirty()
         {
             if (Time.time - lastSyncTime >= syncInterval)
             {
-                return syncVarDirtyBits != 0L || AnySyncObjectDirty();
+                if (syncVarDirtyBits != 0L) return true;
+                // note: don't use Linq here. 1200 networked objects:
+                //   Linq: 187KB GC/frame;, 2.66ms time
+                //   for: 8KB GC/frame; 1.28ms time
+                foreach (SyncObject syncObject in syncObjects)
+                {
+                    if (syncObject.IsDirty) return true;
+                }
             }
             return false;
         }
