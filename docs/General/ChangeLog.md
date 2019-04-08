@@ -1,8 +1,14 @@
 # Change Log
 
-## Version 1.7 -- In Progress
+## Version 3.x.x -- In Progress
 
-- Added: Semantic Versioning
+- Fixed: Exceptions in overrides of Network Manager and other components incorrectly silenced.
+- Fixed: Lobby system sometimes would not spawn and swap game player prefabs into the game scene
+- Fixed: NetworkManager round-robin mode using NetworkStartPosition objects now uses depth-first hierarchy order.
+
+## Version 3.4.9 -- 2019-Apr-6
+
+- Added: Semantic Versioning (which is why we jumped from 1.6 to 3.4.9)
 - Added: [SyncDictionary](../Classes/SyncDictionary)
 - Added: [SyncHashSet](../Classes/SyncHashSet)
 - Added: [SyncSortedSet](../Classes/SyncSortedSet)
