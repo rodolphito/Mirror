@@ -247,6 +247,17 @@ namespace Mirror.Buffers
         }
 
         [MethodImpl(Inline)]
+        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, decimal decimalSrc)
+        {
+            fixed (byte* pdst = &dst[dstOffset])
+            {
+                UnsafeCopy8(pdst+0, (byte*)&decimalSrc+0);
+                UnsafeCopy8(pdst+8, (byte*)&decimalSrc+8);
+            }
+            return sizeof(decimal);
+        }
+
+        [MethodImpl(Inline)]
         public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, string stringSrc)
         {
             uint written = 0;
@@ -422,6 +433,18 @@ namespace Mirror.Buffers
                 UnsafeCopy8((byte*)pdst, psrc);
             }
             return sizeof(double);
+        }
+
+        [MethodImpl(Inline)]
+        public static unsafe uint UnsafeRead(out decimal decimalDst, byte[] src, ulong srcOffset)
+        {
+            fixed (void* pdst = &decimalDst)
+            fixed (byte* psrc = &src[srcOffset])
+            {
+                UnsafeCopy8((byte*)pdst+0, psrc+0);
+                UnsafeCopy8((byte*)pdst+8, psrc+8);
+            }
+            return sizeof(decimal);
         }
 
         [MethodImpl(Inline)]
