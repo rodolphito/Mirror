@@ -16,7 +16,7 @@ namespace Mirror.Buffers
 
         internal ulong Capacity { get; private set; }
 
-        public ulong Position
+        ulong IBuffer.Position
         {
             get
             {
@@ -28,6 +28,19 @@ namespace Mirror.Buffers
                 CheckPosition(value);
 #endif
                 _position = value;
+            }
+        }
+
+        ulong IBuffer.Length
+        {
+            get
+            {
+                return _length;
+            }
+            set
+            {
+                // TODO: increase capacity if needed, zero-fill newly opened space
+                _length = value;
             }
         }
 
@@ -138,6 +151,14 @@ namespace Mirror.Buffers
             UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
         }
 
+        unsafe void IBuffer.WriteDecimal(decimal src)
+        {
+#if MIRROR_BUFFER_CHECK_BOUNDS
+            CheckWrite(sizeof(decimal));
+#endif
+            UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
+        }
+
         unsafe void IBuffer.WriteString(string src)
         {
 #if MIRROR_BUFFER_CHECK_BOUNDS
@@ -197,6 +218,15 @@ namespace Mirror.Buffers
             CheckRead(sizeof(double));
 #endif
             UpdateRead(BufferUtil.UnsafeRead(out double dst, _buffer, _offset + _position));
+            return dst;
+        }
+
+        unsafe decimal IBuffer.ReadDecimal()
+        {
+#if MIRROR_BUFFER_CHECK_BOUNDS
+            CheckRead(sizeof(decimal));
+#endif
+            UpdateRead(BufferUtil.UnsafeRead(out decimal dst, _buffer, _offset + _position));
             return dst;
         }
 
