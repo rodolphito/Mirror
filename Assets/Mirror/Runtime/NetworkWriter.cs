@@ -1,6 +1,9 @@
+#define USE_BUFFERS
+
 using System;
 using System.IO;
 using System.Text;
+using Mirror.Buffers;
 using UnityEngine;
 
 namespace Mirror
@@ -8,6 +11,65 @@ namespace Mirror
     // Binary stream Writer. Supports simple types, buffers, arrays, structs, and nested types
     public class NetworkWriter
     {
+        #if USE_BUFFERS
+        // create writer immediately with it's own buffer so no one can mess with it and so that we can resize it.
+        readonly IBuffer writer;
+
+        // 'int' is the best type for .Position. 'short' is too small if we send >32kb which would result in negative .Position
+        // -> converting long to int is fine until 2GB of data (MAX_INT), so we don't have to worry about overflows here
+        public int Position { get => (int)writer.Position; set => writer.Position = (ulong) value; }
+
+        // MemoryStream has 3 values: Position, Length and Capacity.
+        // Position is used to indicate where we are writing
+        // Length is how much data we have written
+        // capacity is how much memory we have allocated
+        // ToArray returns all the data we have written,  regardless of the current position
+        public byte[] ToArray()
+        {
+            byte[] data = new byte[writer.Length];
+            ulong position = writer.Position;
+            writer.Position = 0;
+            writer.ReadBytes(data, 0, writer.Length);
+            writer.Position = position;
+            return data;
+        }
+
+        // reset both the position and length of the stream,  but leaves the capacity the same
+        // so that we can reuse this writer without extra allocations
+        public void SetLength(long value) => writer.Length = (ulong) value;
+
+        public void Write(byte value) => writer.WriteByte(value);
+        public void Write(sbyte value) => writer.WriteByte((byte)value);
+        public void Write(char value) => writer.WriteUShort((ushort)value);
+        public void Write(bool value) => writer.WriteByte(value ? (byte) 1 : (byte) 0);
+        public void Write(short value) => writer.WriteUShort((ushort)value);
+        public void Write(ushort value) => writer.WriteUShort(value);
+        public void Write(int value) => writer.WriteUInt((uint)value);
+        public void Write(uint value) => writer.WriteUInt(value);
+        public void Write(long value) => writer.WriteULong((ulong)value);
+        public void Write(ulong value) => writer.WriteULong(value);
+        public void Write(float value) => writer.WriteFloat(value);
+        public void Write(double value) => writer.WriteDouble(value);
+        public void Write(decimal value) => writer.WriteDecimal(value);
+
+        public void Write(string value)
+        {
+            // BinaryWriter doesn't support null strings, so let's write an extra boolean for that
+            // (note: original HLAPI would write "" for null strings, but if a string is null on the server then it
+            //        should also be null on the client)
+            Write(value != null);
+            if (value != null) 
+                writer.WriteString(value);
+        }
+
+        // for byte arrays with consistent size, where the reader knows how many to read
+        // (like a packet opcode that's always the same)
+        public void Write(byte[] buffer, int offset, int count)
+        {
+            // no null check because we would need to write size info for that too (hence WriteBytesAndSize)
+            writer.WriteBytes(buffer, checked((ulong) offset), checked((ulong) count));
+        }
+        #else
         // cache encoding instead of creating it with BinaryWriter each time
         // 1000 readers before:  1MB GC, 30ms
         // 1000 readers after: 0.8MB GC, 18ms
@@ -69,6 +131,7 @@ namespace Mirror
             // no null check because we would need to write size info for that too (hence WriteBytesAndSize)
             writer.Write(buffer, offset, count);
         }
+        #endif
 
         // for byte arrays with dynamic size, where the reader doesn't know how many will come
         // (like an inventory with different items etc.)
@@ -78,11 +141,11 @@ namespace Mirror
             // null is supported because [SyncVar]s might be structs with null byte[] arrays
             // (writing a size=0 empty array is not the same, the server and client would be out of sync)
             // (using size=-1 for null would limit max size to 32kb instead of 64kb)
-            writer.Write(buffer != null); // notNull?
+            Write(buffer != null); // notNull?
             if (buffer != null)
             {
                 WritePackedUInt32(length);
-                writer.Write(buffer, offset, count);
+                Write(buffer, offset, count);
             }
         }
 
@@ -301,7 +364,7 @@ namespace Mirror
 
         public void Write(Guid value)
         {
-            writer.Write(value.ToByteArray());
+            Write(value.ToByteArray(), 0, 16);
         }
 
         public void Write(NetworkIdentity value)

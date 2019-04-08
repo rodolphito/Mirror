@@ -48,7 +48,7 @@ namespace Mirror
         {
             ulong length = checked((ulong) count);
             byte[] data = new byte[length];
-            if (reader.ReadBytes(data) != length) throw new EndOfStreamException("Could not fulfill request to read a byte[] of length " + length);
+            if (reader.ReadBytes(data, 0, length) != length) throw new EndOfStreamException("Could not fulfill request to read a byte[] of length " + length);
             return data;
         }
         #else
