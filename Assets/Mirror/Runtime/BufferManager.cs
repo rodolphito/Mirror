@@ -8,8 +8,8 @@ namespace Mirror.Buffers
 {
     public static class BufferManager
     {
-        #region AquiredRef and AquiredRef internal classes
-        internal class AcquiredRef<T>
+        #region AcquiredRef and AcquiredRefList classes
+        class AcquiredRef<T>
         {
             readonly T _classRef;
 #if MIRROR_BUFFER_STACK_DEBUG
@@ -44,7 +44,7 @@ namespace Mirror.Buffers
 #endif
         }
 
-        internal class AcquiredRefList<T>
+        class AcquiredRefList<T>
         {
             Dictionary<T, AcquiredRef<T>> _refMap = new Dictionary<T, AcquiredRef<T>>();
             Stack<AcquiredRef<T>> _refFreeStack = new Stack<AcquiredRef<T>>();
