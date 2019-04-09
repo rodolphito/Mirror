@@ -8,7 +8,9 @@ namespace Mirror.Buffers
 {
     internal sealed unsafe class Buffer : IBuffer
     {
+#if MIRROR_BUFFER_DYNAMIC_GROWTH
         IBufferAllocator _allocator;
+#endif
         byte[] _buffer;
         ulong _offset;
         ulong _position;
@@ -39,7 +41,8 @@ namespace Mirror.Buffers
             }
             set
             {
-                // TODO: increase capacity if needed, zero-fill newly opened space
+                // TODO: zero-fill newly opened space
+                CheckCapacity(_length);
                 _length = value;
             }
         }
@@ -50,7 +53,9 @@ namespace Mirror.Buffers
 
         internal void Setup(IBufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
         {
+#if MIRROR_BUFFER_DYNAMIC_GROWTH
             _allocator = allocator;
+#endif
             _buffer = buf;
             _offset = offset;
             _position = 0;
@@ -58,19 +63,24 @@ namespace Mirror.Buffers
             Capacity = capacity;
         }
 
+        void CheckCapacity(ulong minimum)
+        {
+            if (minimum > Capacity)
+            {
+#if MIRROR_BUFFER_DYNAMIC_GROWTH
+                _allocator.Reacquire(this, BufferUtil.NextPow2(minimum));
+#else
+                throw new ArgumentOutOfRangeException("buffer dynamic growth is disabled");
+#endif
+            }
+        }
+
 #if MIRROR_BUFFER_CHECK_BOUNDS
         void CheckWrite(ulong addToPos)
         {
             ulong newPos = _position + addToPos;
-
-            if (newPos > Capacity)
-            {
-#if MIRROR_BUFFER_DYNAMIC_GROWTH
-                _allocator.Reacquire(this, Capacity << 1);
-#else
-                throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer capacity");
-#endif
-            }
+            
+            CheckCapacity(newPos);
         }
 
         void CheckRead(ulong addToPos)
