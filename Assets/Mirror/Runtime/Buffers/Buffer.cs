@@ -15,8 +15,9 @@ namespace Mirror.Buffers
         ulong _offset;
         ulong _position;
         ulong _length;
+        ulong _capacity;
 
-        internal ulong Capacity { get; private set; }
+        internal ulong Capacity => _capacity;
 
         ulong IBuffer.Position
         {
@@ -60,12 +61,12 @@ namespace Mirror.Buffers
             _offset = offset;
             _position = 0;
             _length = 0;
-            Capacity = capacity;
+            _capacity = capacity;
         }
 
         void CheckCapacity(ulong minimum)
         {
-            if (minimum > Capacity)
+            if (minimum > _capacity)
             {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
                 _allocator.Reacquire(this, BufferUtil.NextPow2(minimum));
