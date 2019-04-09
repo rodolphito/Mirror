@@ -92,13 +92,13 @@ namespace Mirror.Buffers
         }
 #endif
 
-        void UpdateWrite(uint addToPos)
+        void UpdateWrite(ulong addToPos)
         {
             _position += addToPos;
             _length = BufferUtil.Max(_position, _length);
         }
 
-        void UpdateRead(uint addToPos)
+        void UpdateRead(ulong addToPos)
         {
             _position += addToPos;
         }
@@ -157,6 +157,14 @@ namespace Mirror.Buffers
             CheckWrite(sizeof(decimal));
 #endif
             UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
+        }
+
+        unsafe void IBuffer.WriteBytes(byte[] data, ulong offset, ulong length)
+        {
+#if MIRROR_BUFFER_CHECK_BOUNDS
+            CheckWrite(length);
+#endif
+            UpdateRead(BufferUtil.UnsafeWrite(_buffer, _position, data, offset, length));
         }
 
         unsafe void IBuffer.WriteString(string src)
@@ -228,6 +236,13 @@ namespace Mirror.Buffers
 #endif
             UpdateRead(BufferUtil.UnsafeRead(out decimal dst, _buffer, _offset + _position));
             return dst;
+        }
+
+        unsafe ulong IBuffer.ReadBytes(byte[] data, ulong offset, ulong length)
+        {
+            length = BufferUtil.Min(length, _length - _position);
+            UpdateRead(BufferUtil.UnsafeRead(_buffer, _position, data, offset, length));
+            return length;
         }
 
         unsafe string IBuffer.ReadString(uint length)
