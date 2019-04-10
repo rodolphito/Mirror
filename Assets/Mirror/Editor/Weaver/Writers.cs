@@ -11,8 +11,8 @@ namespace Mirror.Weaver
     {
         const int MaxRecursionCount = 128;
 
-        static Dictionary<string, MethodReference> writeFuncs;
-        static Dictionary<string, MethodReference> customWriters;
+        static Dictionary<string, MethodReference> writeFuncs = new Dictionary<string, MethodReference>();
+        static Dictionary<string, MethodReference> customWriters = new Dictionary<string, MethodReference>();
         static AssemblyDefinition currentAssembly;
 
 
@@ -20,11 +20,11 @@ namespace Mirror.Weaver
         {
             Writers.currentAssembly = currentAssembly;
 
-            writeFuncs = new Dictionary<string, MethodReference>();
-            customWriters = new Dictionary<string, MethodReference>();
-            RegisterCustomWriters(mirrorAssembly);
-       
-            customWriters = new Dictionary<string, MethodReference>();
+            if (writeFuncs.Count == 0)
+            {
+                RegisterCustomWriters(mirrorAssembly);
+                customWriters.Clear();
+            }
             RegisterCustomWriters(currentAssembly);
         }
 

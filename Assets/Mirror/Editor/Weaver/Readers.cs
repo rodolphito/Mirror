@@ -9,18 +9,20 @@ namespace Mirror.Weaver
     public static class Readers
     {
         const int MaxRecursionCount = 128;
-        static Dictionary<string, MethodReference> readFuncs;
-        static Dictionary<string, MethodReference> customReaders;
+
+        static Dictionary<string, MethodReference> readFuncs = new Dictionary<string, MethodReference>();
+        static Dictionary<string, MethodReference> customReaders = new Dictionary<string, MethodReference>();
         static AssemblyDefinition currentAssembly;
 
         public static void Init(AssemblyDefinition mirrorAssembly, AssemblyDefinition CurrentAssembly)
         {
             Readers.currentAssembly = CurrentAssembly;
             // register built in readers
-            readFuncs = new Dictionary<string, MethodReference>();
-            customReaders = new Dictionary<string, MethodReference>();
-            RegisterReaders(mirrorAssembly);
-            customReaders = new Dictionary<string, MethodReference>();
+            if (readFuncs.Count == 0)
+            {
+                RegisterReaders(mirrorAssembly);
+                customReaders.Clear();
+            }
             RegisterReaders(CurrentAssembly);
         }
 
