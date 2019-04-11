@@ -8,13 +8,16 @@ namespace Mirror.Buffers
 {
     internal sealed unsafe class Buffer : IBuffer
     {
+#if MIRROR_BUFFER_DYNAMIC_GROWTH
         IBufferAllocator _allocator;
+#endif
         byte[] _buffer;
         ulong _offset;
         ulong _position;
         ulong _length;
+        ulong _capacity;
 
-        internal ulong Capacity { get; private set; }
+        internal ulong Capacity => _capacity;
 
         ulong IBuffer.Position
         {
@@ -39,7 +42,8 @@ namespace Mirror.Buffers
             }
             set
             {
-                // TODO: increase capacity if needed, zero-fill newly opened space
+                // TODO: zero-fill newly opened space
+                CheckCapacity(_length);
                 _length = value;
             }
         }
@@ -50,27 +54,34 @@ namespace Mirror.Buffers
 
         internal void Setup(IBufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
         {
+#if MIRROR_BUFFER_DYNAMIC_GROWTH
             _allocator = allocator;
+#endif
             _buffer = buf;
             _offset = offset;
             _position = 0;
             _length = 0;
-            Capacity = capacity;
+            _capacity = capacity;
+        }
+
+        void CheckCapacity(ulong minimum)
+        {
+            if (minimum > _capacity)
+            {
+#if MIRROR_BUFFER_DYNAMIC_GROWTH
+                _allocator.Reacquire(this, BufferUtil.NextPow2(minimum));
+#else
+                throw new ArgumentOutOfRangeException("buffer dynamic growth is disabled");
+#endif
+            }
         }
 
 #if MIRROR_BUFFER_CHECK_BOUNDS
         void CheckWrite(ulong addToPos)
         {
             ulong newPos = _position + addToPos;
-
-            if (newPos > Capacity)
-            {
-#if MIRROR_BUFFER_DYNAMIC_GROWTH
-                _allocator.Reacquire(this, Capacity << 1);
-#else
-                throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer capacity");
-#endif
-            }
+            
+            CheckCapacity(newPos);
         }
 
         void CheckRead(ulong addToPos)
@@ -92,13 +103,13 @@ namespace Mirror.Buffers
         }
 #endif
 
-        void UpdateWrite(uint addToPos)
+        void UpdateWrite(ulong addToPos)
         {
             _position += addToPos;
             _length = BufferUtil.Max(_position, _length);
         }
 
-        void UpdateRead(uint addToPos)
+        void UpdateRead(ulong addToPos)
         {
             _position += addToPos;
         }
@@ -157,6 +168,14 @@ namespace Mirror.Buffers
             CheckWrite(sizeof(decimal));
 #endif
             UpdateWrite(BufferUtil.UnsafeWrite(_buffer, _offset + _position, src));
+        }
+
+        unsafe void IBuffer.WriteBytes(byte[] data, ulong offset, ulong length)
+        {
+#if MIRROR_BUFFER_CHECK_BOUNDS
+            CheckWrite(length);
+#endif
+            UpdateRead(BufferUtil.UnsafeWrite(_buffer, _position, data, offset, length));
         }
 
         unsafe void IBuffer.WriteString(string src)
@@ -228,6 +247,13 @@ namespace Mirror.Buffers
 #endif
             UpdateRead(BufferUtil.UnsafeRead(out decimal dst, _buffer, _offset + _position));
             return dst;
+        }
+
+        unsafe ulong IBuffer.ReadBytes(byte[] data, ulong offset, ulong length)
+        {
+            length = BufferUtil.Min(length, _length - _position);
+            UpdateRead(BufferUtil.UnsafeRead(_buffer, _position, data, offset, length));
+            return length;
         }
 
         unsafe string IBuffer.ReadString(uint length)

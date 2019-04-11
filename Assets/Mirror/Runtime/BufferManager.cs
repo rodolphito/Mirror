@@ -8,8 +8,8 @@ namespace Mirror.Buffers
 {
     public static class BufferManager
     {
-        #region AquiredRef and AquiredRef internal classes
-        internal class AcquiredRef<T>
+        #region AcquiredRef and AcquiredRefList classes
+        class AcquiredRef<T>
         {
             readonly T _classRef;
 #if MIRROR_BUFFER_STACK_DEBUG
@@ -44,7 +44,7 @@ namespace Mirror.Buffers
 #endif
         }
 
-        internal class AcquiredRefList<T>
+        class AcquiredRefList<T>
         {
             Dictionary<T, AcquiredRef<T>> _refMap = new Dictionary<T, AcquiredRef<T>>();
             Stack<AcquiredRef<T>> _refFreeStack = new Stack<AcquiredRef<T>>();
@@ -53,7 +53,6 @@ namespace Mirror.Buffers
                 if (_refFreeStack.Count > 0)
                 {
                     return _refFreeStack.Pop().Reference();
-
                 }
 
                 return default;
@@ -74,7 +73,7 @@ namespace Mirror.Buffers
 
             public bool HasLeakedReferences()
             {
-                return (_refFreeStack.Count == _refMap.Count);
+                return _refFreeStack.Count == _refMap.Count;
             }
 
             public void DebugReferences()
@@ -94,7 +93,7 @@ namespace Mirror.Buffers
                     }
                 }
 #else
-                Debug.LogWarning("Reference details not collected without MIRROR_ALLOC_STACK_DEBUG defined");
+                Debug.LogWarning("Reference details not collected without MIRROR_BUFFER_STACK_DEBUG defined");
 #endif
             }
         }
