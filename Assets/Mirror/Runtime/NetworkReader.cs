@@ -11,10 +11,20 @@ namespace Mirror
     // Note: This class is intended to be extremely pedantic, and
     // throw exceptions whenever stuff is going slightly wrong.
     // The exceptions will be handled in NetworkServer/NetworkClient.
-    public class NetworkReader
+    public class NetworkReader : IBufferSink
     {
+        public void Sink(IBuffer buf)
+        {
+            if (reader != null)
+            {
+                BufferManager.ReleaseBuffer(reader);
+            }
+            reader = buf;
+            reader.Position = 0;
+        }
+
         #if USE_BUFFERS
-        readonly IBuffer reader;
+        private IBuffer reader;
 
         public NetworkReader(byte[] buffer)
         {

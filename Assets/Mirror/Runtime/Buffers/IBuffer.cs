@@ -23,4 +23,14 @@ namespace Mirror.Buffers
         ulong ReadBytes(byte[] data, ulong offset, ulong length);
         string ReadString(uint length);
     }
+
+    public interface IBufferSink
+    {
+        void Sink(IBuffer buffer);
+    }
+
+    public interface IBufferSource
+    {
+        IBuffer Source();
+    }
 }

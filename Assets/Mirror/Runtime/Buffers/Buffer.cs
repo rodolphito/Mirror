@@ -12,6 +12,7 @@ namespace Mirror.Buffers
         IBufferAllocator _allocator;
 #endif
         byte[] _buffer;
+        Memory<byte> mem;
         ulong _offset;
         ulong _position;
         ulong _length;
