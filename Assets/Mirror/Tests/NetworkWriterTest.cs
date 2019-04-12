@@ -116,7 +116,7 @@ namespace Mirror.Tests
         }
 
         [Test]
-        public void TestReading0LengthBytesAnsSize()
+        public void TestReading0LengthBytesAndSize()
         {
             NetworkWriter writer = new NetworkWriter();
             writer.WriteBytesAndSize(new byte[]{});
@@ -428,7 +428,8 @@ namespace Mirror.Tests
                 writer.Write(input);
                 NetworkReader reader = new NetworkReader(writer.ToArray());
                 Ray output = reader.ReadRay();
-                Assert.That(output, Is.EqualTo(input));
+                Assert.That((output.direction - input.direction).magnitude, Is.LessThan(1e-6f));
+                Assert.That(output.origin, Is.EqualTo(input.origin));
             }
         }
 
@@ -473,6 +474,32 @@ namespace Mirror.Tests
                 NetworkReader reader = new NetworkReader(data);
                 Assert.Throws<System.Text.DecoderFallbackException>(() => reader.ReadString());
             }
+        }
+
+        [Test]
+        public void TestReadingTruncatedString()
+        {
+            NetworkWriter writer = new NetworkWriter();
+            writer.Write("a string longer than 10 bytes");
+            writer.SetLength(10);
+            NetworkReader reader = new NetworkReader(writer.ToArray());
+            Assert.Throws<System.IO.EndOfStreamException>(() => reader.ReadString());
+        }
+
+        [Test]
+        public void TestStringBinaryCompat()
+        {
+            NetworkWriter writer = new NetworkWriter();
+            writer.Write("");
+            writer.Write("short string");
+            writer.Write(string.Join("0", new string[100000]));
+            byte[] data = writer.ToArray();
+            byte[] expect = new byte[]{1,0,1,12,115,104,111,114,116,32,115,116,114,105,110,103,1,159,141,6};
+            Assert.That(data.Length, Is.EqualTo(100019));
+            for (int i = 0; i < expect.Length; i++)
+                Assert.That(data[i], Is.EqualTo(expect[i]), $"index {i}");
+            for (int i = expect.Length; i < data.Length; i++)
+                Assert.That(data[i], Is.EqualTo(48), $"index {i}");
         }
 
         [Test]
@@ -823,6 +850,63 @@ namespace Mirror.Tests
                 decimal readDecimal = reader.ReadDecimal();
                 Assert.That(readDecimal, Is.EqualTo(weird));
             }
+        }
+
+        [Test]
+        public void TestFloatBinaryCompatibility()
+        {
+            float[] weirdFloats = new float[]{
+                ((float) Math.PI) / 3.0f,
+                ((float) Math.E) / 3.0f
+            };
+            byte[] expected = new byte[]{
+                146, 10,134, 63,
+                197,245,103, 63,
+            };
+            NetworkWriter writer = new NetworkWriter();
+            foreach (float weird in weirdFloats)
+            {
+                writer.Write(weird);
+            }
+            Assert.That(writer.ToArray(), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void TestDoubleBinaryCompatibility()
+        {
+            double[] weirdDoubles = new double[]{
+                Math.PI / 3.0d,
+                Math.E / 3.0d
+            };
+            byte[] expected = new byte[]{
+                101,115, 45, 56, 82,193,240, 63,
+                140,116,112,185,184,254,236, 63,
+            };
+            NetworkWriter writer = new NetworkWriter();
+            foreach (double weird in weirdDoubles)
+            {
+                writer.Write(weird);
+            }
+            Assert.That(writer.ToArray(), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void TestDecimalBinaryCompatibility()
+        {
+            decimal[] weirdDecimals = new decimal[]{
+                ((decimal) Math.PI) / 3.0m,
+                ((decimal) Math.E) / 3.0m
+            };
+            byte[] expected = new byte[]{
+                171,234,132, 10, 91, 94,177,  3, 18, 55,214, 33,  0,  0, 28,  0,
+                240,109,194,164,104, 82,  0,  0,  0,  0,  0,  0,  0,  0, 14,  0,
+            };
+            NetworkWriter writer = new NetworkWriter();
+            foreach (decimal weird in weirdDecimals)
+            {
+                writer.Write(weird);
+            }
+            Assert.That(writer.ToArray(), Is.EqualTo(expected));
         }
 
         [Test]
