@@ -251,8 +251,9 @@ namespace Mirror.Buffers
         {
             fixed (byte* pdst = &dst[dstOffset])
             {
-                UnsafeCopy8(pdst+0, (byte*)&decimalSrc+0);
-                UnsafeCopy8(pdst+8, (byte*)&decimalSrc+8);
+                UnsafeCopy4(pdst+12, (byte*)&decimalSrc+0);
+                UnsafeCopy4(pdst+ 8, (byte*)&decimalSrc+4);
+                UnsafeCopy8(pdst+ 0, (byte*)&decimalSrc+8);
             }
             return sizeof(decimal);
         }
@@ -441,8 +442,9 @@ namespace Mirror.Buffers
             fixed (void* pdst = &decimalDst)
             fixed (byte* psrc = &src[srcOffset])
             {
-                UnsafeCopy8((byte*)pdst+0, psrc+0);
-                UnsafeCopy8((byte*)pdst+8, psrc+8);
+                UnsafeCopy4((byte*)pdst+0, psrc+12);
+                UnsafeCopy4((byte*)pdst+4, psrc+ 8);
+                UnsafeCopy8((byte*)pdst+8, psrc+ 0);
             }
             return sizeof(decimal);
         }

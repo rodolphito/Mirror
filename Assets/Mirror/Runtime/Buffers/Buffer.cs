@@ -1,15 +1,18 @@
 #define MIRROR_BUFFER_CHECK_BOUNDS
 #define MIRROR_BUFFER_DYNAMIC_GROWTH
+#define MIRROR_BUFFER_WARN_ALL
+#define MIRROR_BUFFER_ZERO_ON_RESIZE
 
 using System;
 using System.Text;
+using UnityEngine;
 
 namespace Mirror.Buffers
 {
     internal sealed unsafe class Buffer : IBuffer
     {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-        IBufferAllocator _allocator;
+        BufferAllocator _allocator;
 #endif
         byte[] _buffer;
         Memory<byte> mem;
@@ -28,10 +31,9 @@ namespace Mirror.Buffers
             }
             set
             {
-#if MIRROR_BUFFER_CHECK_BOUNDS
-                CheckPosition(value);
-#endif
+                CheckCapacity(value);
                 _position = value;
+                _length = BufferUtil.Max(_position, _length);
             }
         }
 
@@ -43,9 +45,21 @@ namespace Mirror.Buffers
             }
             set
             {
-                // TODO: zero-fill newly opened space
-                CheckCapacity(_length);
+                CheckCapacity(value);
+#if MIRROR_BUFFER_ZERO_ON_RESIZE
+                if (_length > value)
+                {
+#if MIRROR_BUFFER_WARN_ALL
+                    Debug.LogWarning("Downsizing Buffer from " + _length + " to " + value);
+#endif
+                    for (ulong i = value; i < _length; i++)
+                    {
+                        _buffer[i] = 0;
+                    }
+                }
+#endif
                 _length = value;
+                _position = BufferUtil.Min(_position, _length);
             }
         }
 
@@ -53,15 +67,22 @@ namespace Mirror.Buffers
         {
         }
 
-        internal void Setup(IBufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
+        internal void Setup(BufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
         {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
             _allocator = allocator;
 #endif
+            if (_buffer != null && buf != null)
+            {
+                Array.Copy(_buffer, buf, _buffer.Length);
+            }
+            else
+            {
+                _position = 0;
+                _length = 0;
+            }
             _buffer = buf;
             _offset = offset;
-            _position = 0;
-            _length = 0;
             _capacity = capacity;
         }
 
@@ -70,7 +91,11 @@ namespace Mirror.Buffers
             if (minimum > _capacity)
             {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-                _allocator.Reacquire(this, BufferUtil.NextPow2(minimum));
+                minimum = BufferUtil.NextPow2(minimum);
+#if MIRROR_BUFFER_WARN_ALL
+                Debug.LogWarning("Upsizing Buffer from " + _capacity + " to " + minimum);
+#endif
+                _allocator.Reacquire(this, minimum);
 #else
                 throw new ArgumentException("buffer dynamic growth is disabled");
 #endif
@@ -95,15 +120,7 @@ namespace Mirror.Buffers
 
             if (newPos > _length)
             {
-                throw new ArgumentException("buffer cursor position cannot be greater than buffer length");
-            }
-        }
-
-        void CheckPosition(ulong newPosition)
-        {
-            if (newPosition > _length)
-            {
-                throw new ArgumentException("buffer cursor position cannot be greater than buffer length");
+                throw new System.IO.EndOfStreamException("buffer cursor position cannot be greater than buffer length");
             }
         }
 #endif
