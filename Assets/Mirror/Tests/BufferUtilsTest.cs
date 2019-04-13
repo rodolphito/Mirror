@@ -151,42 +151,30 @@ namespace Mirror.Tests
         [Test]
         public void TestUnsafeWriteArray()
         {
-            for (int i = 0; i < 100; i++)
-            {
-                byte[] src = new byte[i];
-                byte[] dst = new byte[i];
-                for (int j = 0; j < src.Length; j++) src[j] = (byte) j;
-                for (int j = 0; j < dst.Length; j++) dst[j] = (byte) -j;
-                ulong written = BufferUtil.UnsafeWrite(dst, 0, src, 0, (ulong)i);
-                Assert.That(written, Is.EqualTo((uint)i));
-                for (int j = 0; j < src.Length; j++)
-                {
-                    Assert.That(src[j], Is.EqualTo((byte) j));
-                    Assert.That(dst[j], Is.EqualTo(src[j]));
-                }
-            }
-            for (int i = 30; i < 100; i++)
-            {
-                byte[] src = new byte[20];
-                byte[] dst = new byte[i];
-                for (int j = 0; j < src.Length; j++) src[j] = (byte) j;
-                for (int j = 0; j < dst.Length; j++) dst[j] = (byte) -j;
-                ulong written = BufferUtil.UnsafeWrite(dst, 5, src, 0, (ulong)i);
-                Assert.That(written, Is.EqualTo((uint)i));
-                for (int j = 0; j < src.Length; j++)
-                {
-                    Assert.That(src[j], Is.EqualTo((byte) j));
-                    Assert.That(dst[j + 5], Is.EqualTo(src[j]));
-                }
-                for (int j = 0; j < 5; j++)
-                {
-                    Assert.That(dst[j], Is.EqualTo((byte) -j));
-                }
-                for (int j = 5 + i; j < dst.Length; j++)
-                {
-                    Assert.That(dst[j], Is.EqualTo((byte) -j));
-                }
-            }
+            byte[] src;
+            byte[] dst;
+            byte[] exp;
+            src = new byte[10] { 0,1,2,3,4,5,6,7,8,9 };
+            dst = new byte[10];
+            exp = new byte[10] { 0,1,2,3,4,5,6,7,8,9 };
+            BufferUtil.UnsafeWrite(dst, 0, src, 0, 10);
+            Assert.That(dst, Is.EqualTo(exp));
+
+            dst = new byte[5];
+            exp = new byte[5] { 0,1,2,3,4 };
+            BufferUtil.UnsafeWrite(dst, 0, src, 0, 5);
+            Assert.That(dst, Is.EqualTo(exp));
+
+            dst = new byte[10];
+            exp = new byte[10] { 0,0,0,0,0,0,1,2,3,4 };
+            BufferUtil.UnsafeWrite(dst, 5, src, 0, 5);
+            Assert.That(dst, Is.EqualTo(exp));
+
+            dst = new byte[5];
+            exp = new byte[5] { 5,6,7,8,9 };
+            BufferUtil.UnsafeWrite(dst, 0, src, 5, 5);
+            Assert.That(dst, Is.EqualTo(exp));
+            return;
         }
 
         [Test]

@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Buffers;
+using System;
 
 namespace Mirror.Buffers
 {
@@ -34,7 +35,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_PEDANTIC_ALLOCATOR
                 if (_bufferPool.Contains(buffer))
                 {
-                    throw new System.ArgumentException("Do not Reacquire buffers which have been Released.", ibuffer.ToString());
+                    throw new ArgumentException("Do not Reacquire buffers which have been Released.", ibuffer.ToString());
                 }
 #endif
                 // one of two options here:
@@ -50,7 +51,7 @@ namespace Mirror.Buffers
             }
             else
             {
-                throw new System.ArgumentException("Do not Reacquire buffers Acquired from a different Allocator!", ibuffer.ToString());
+                throw new ArgumentException("Do not Reacquire buffers Acquired from a different Allocator!", ibuffer.ToString());
             }
         }
 
@@ -61,14 +62,14 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_PEDANTIC_ALLOCATOR
                 if (_bufferPool.Contains(buffer))
                 {
-                    throw new System.ArgumentException("Do not Release buffers twice.", ibuffer.ToString());
+                    throw new ArgumentException("Do not Release buffers twice.", ibuffer.ToString());
                 }
 #endif
                 _bufferPool.Push(buffer);
             }
             else
             {
-                throw new System.ArgumentException("Do not Release buffers Acquired from a different Allocator!", ibuffer.ToString());
+                throw new ArgumentException("Do not Release buffers Acquired from a different Allocator!", ibuffer.ToString());
             }
         }
     }

@@ -26,6 +26,11 @@ namespace Mirror
         // -> converting long to int is fine until 2GB of data (MAX_INT), so we don't have to worry about overflows here
         public int Position { get => (int)writer.Position; set => writer.Position = (ulong) value; }
 
+        public NetworkWriter()
+        {
+            writer = BufferManager.AcquireBuffer(512);
+        }
+
         // MemoryStream has 3 values: Position, Length and Capacity.
         // Position is used to indicate where we are writing
         // Length is how much data we have written
@@ -65,7 +70,7 @@ namespace Mirror
             // (note: original HLAPI would write "" for null strings, but if a string is null on the server then it
             //        should also be null on the client)
             Write(value != null);
-            if (value != null) 
+            if (value != null)
                 writer.WriteString(value);
         }
 
@@ -127,7 +132,7 @@ namespace Mirror
             // (note: original HLAPI would write "" for null strings, but if a string is null on the server then it
             //        should also be null on the client)
             writer.Write(value != null);
-            if (value != null) 
+            if (value != null)
                 writer.Write(value);
         }
 

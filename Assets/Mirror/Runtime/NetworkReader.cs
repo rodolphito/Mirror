@@ -28,7 +28,9 @@ namespace Mirror
 
         public NetworkReader(byte[] buffer)
         {
-            // TODO: c6 magic
+            reader = BufferManager.AcquireBuffer((ulong)buffer.Length);
+            reader.WriteBytes(buffer, 0, (ulong)buffer.Length);
+            reader.Position = 0;
         }
 
         // 'int' is the best type for .Position. 'short' is too small if we send >32kb which would result in negative .Position
