@@ -1,4 +1,5 @@
 #define MIRROR_BUFFER_PEDANTIC_ALLOCATOR
+#define MIRROR_BUFFER_DO_NOT_RECYCLE
 
 using System.Collections.Generic;
 using System.Buffers;
@@ -13,6 +14,9 @@ namespace Mirror.Buffers
         IBuffer IBufferAllocator.Acquire(ulong minSizeInBytes)
         {
             Buffer buffer;
+#if MIRROR_BUFFER_DO_NOT_RECYCLE
+            buffer = new Buffer();
+#else
             if (_bufferPool.Count > 0)
             {
                 buffer = _bufferPool.Pop();
@@ -21,14 +25,16 @@ namespace Mirror.Buffers
             {
                 buffer = new Buffer();
             }
+#endif
 
+            // TODO: we probably dont need to rent bytes if this is recycled.
             byte[] bytes = _arrayPool.Rent((int) minSizeInBytes);
             buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
 
             return buffer;
         }
 
-        IBuffer IBufferAllocator.Reacquire(IBuffer ibuffer, ulong newMinSizeInBytes)
+        internal void Reacquire(IBuffer ibuffer, ulong newMinSizeInBytes)
         {
             if (ibuffer is Buffer buffer)
             {
@@ -42,12 +48,10 @@ namespace Mirror.Buffers
                 // 1) rent new array from ArrayPool, copy from old, release old
                 // 2) buffer segments / system.io.pipelines magic
                 // for now option 1)
-                if (newMinSizeInBytes < buffer.Capacity) return buffer;
+                if (newMinSizeInBytes < buffer.Capacity) return;
 
                 byte[] bytes = _arrayPool.Rent((int) newMinSizeInBytes);
                 buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
-
-                return ibuffer;
             }
             else
             {
@@ -64,6 +68,9 @@ namespace Mirror.Buffers
                 {
                     throw new ArgumentException("Do not Release buffers twice.", ibuffer.ToString());
                 }
+#endif
+#if MIRROR_BUFFER_DO_NOT_RECYCLE
+                buffer.Setup(null, null, 0, 0);
 #endif
                 _bufferPool.Push(buffer);
             }

@@ -12,7 +12,7 @@ namespace Mirror.Buffers
     internal sealed unsafe class Buffer : IBuffer
     {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-        IBufferAllocator _allocator;
+        BufferAllocator _allocator;
 #endif
         byte[] _buffer;
         Memory<byte> mem;
@@ -71,7 +71,7 @@ namespace Mirror.Buffers
         internal void Setup(IBufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
         {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-            _allocator = allocator;
+            _allocator = (BufferAllocator) allocator;
 #endif
             _buffer = buf;
             _offset = offset;

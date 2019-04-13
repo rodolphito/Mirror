@@ -128,11 +128,6 @@ namespace Mirror.Buffers
             return _bufferAllocator.Acquire(minSizeInBytes);
         }
 
-        public static IBuffer ReacquireBuffer(IBuffer rentedBuffer, ulong newMinSizeInBytes)
-        {
-            return _bufferAllocator.Reacquire(rentedBuffer, newMinSizeInBytes);
-        }
-
         public static void ReleaseBuffer(IBuffer rentedBuffer)
         {
             _bufferAllocator.Release(rentedBuffer);
