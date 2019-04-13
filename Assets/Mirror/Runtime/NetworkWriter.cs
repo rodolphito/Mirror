@@ -71,7 +71,21 @@ namespace Mirror
             //        should also be null on the client)
             Write(value != null);
             if (value != null)
+            {
+                uint length = (uint) value.Length; //TODO: get byte length not char length
+                Write7BitVarInt(length);
                 writer.WriteString(value);
+            }
+        }
+
+        void Write7BitVarInt(uint value)
+        {
+            while (value >= 128)
+            {
+                writer.WriteByte((byte) (value | 128));
+                value >>= 7;
+            }
+            writer.WriteByte((byte) value);
         }
 
         // for byte arrays with consistent size, where the reader knows how many to read
