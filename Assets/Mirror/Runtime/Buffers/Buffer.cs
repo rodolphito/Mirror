@@ -82,7 +82,11 @@ namespace Mirror.Buffers
         {
             ulong newPos = _position + addToPos;
 
-            CheckCapacity(newPos);
+            if (newPos > _length)
+            {
+                _length = newPos;
+                CheckCapacity(newPos);
+            }
         }
 
         void CheckRead(ulong addToPos)
