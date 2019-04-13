@@ -72,7 +72,7 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
                 _allocator.Reacquire(this, BufferUtil.NextPow2(minimum));
 #else
-                throw new ArgumentOutOfRangeException("buffer dynamic growth is disabled");
+                throw new ArgumentException("buffer dynamic growth is disabled");
 #endif
             }
         }
@@ -81,7 +81,7 @@ namespace Mirror.Buffers
         void CheckWrite(ulong addToPos)
         {
             ulong newPos = _position + addToPos;
-            
+
             CheckCapacity(newPos);
         }
 
@@ -91,7 +91,7 @@ namespace Mirror.Buffers
 
             if (newPos > _length)
             {
-                throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer length");
+                throw new ArgumentException("buffer cursor position cannot be greater than buffer length");
             }
         }
 
@@ -99,7 +99,7 @@ namespace Mirror.Buffers
         {
             if (newPosition > _length)
             {
-                throw new ArgumentOutOfRangeException("buffer cursor position cannot be greater than buffer length");
+                throw new ArgumentException("buffer cursor position cannot be greater than buffer length");
             }
         }
 #endif
