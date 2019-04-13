@@ -72,10 +72,17 @@ namespace Mirror.Buffers
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
             _allocator = allocator;
 #endif
+            if (_buffer != null && buf != null)
+            {
+                Array.Copy(_buffer, buf, _buffer.Length);
+            }
+            else
+            {
+                _position = 0;
+                _length = 0;
+            }
             _buffer = buf;
             _offset = offset;
-            _position = 0;
-            _length = 0;
             _capacity = capacity;
         }
 
