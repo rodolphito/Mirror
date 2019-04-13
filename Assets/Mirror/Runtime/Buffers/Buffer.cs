@@ -31,10 +31,9 @@ namespace Mirror.Buffers
             }
             set
             {
-#if MIRROR_BUFFER_CHECK_BOUNDS
-                CheckPosition(value);
-#endif
+                CheckCapacity(value);
                 _position = value;
+                _length = BufferUtil.Max(_position, _length);
             }
         }
 
@@ -46,7 +45,7 @@ namespace Mirror.Buffers
             }
             set
             {
-                CheckCapacity(_length);
+                CheckCapacity(value);
 #if MIRROR_BUFFER_ZERO_ON_RESIZE
                 if (_length > value)
                 {
@@ -68,10 +67,10 @@ namespace Mirror.Buffers
         {
         }
 
-        internal void Setup(IBufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
+        internal void Setup(BufferAllocator allocator, byte[] buf, ulong offset, ulong capacity)
         {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-            _allocator = (BufferAllocator) allocator;
+            _allocator = allocator;
 #endif
             _buffer = buf;
             _offset = offset;
@@ -114,15 +113,7 @@ namespace Mirror.Buffers
 
             if (newPos > _length)
             {
-                throw new ArgumentException("buffer cursor position cannot be greater than buffer length");
-            }
-        }
-
-        void CheckPosition(ulong newPosition)
-        {
-            if (newPosition > _length)
-            {
-                throw new ArgumentException("buffer cursor position cannot be greater than buffer length");
+                throw new System.IO.EndOfStreamException("buffer cursor position cannot be greater than buffer length");
             }
         }
 #endif

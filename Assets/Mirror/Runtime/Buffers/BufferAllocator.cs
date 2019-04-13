@@ -34,29 +34,16 @@ namespace Mirror.Buffers
             return buffer;
         }
 
-        internal void Reacquire(IBuffer ibuffer, ulong newMinSizeInBytes)
+        internal void Reacquire(Buffer buffer, ulong newMinSizeInBytes)
         {
-            if (ibuffer is Buffer buffer)
-            {
-#if MIRROR_BUFFER_PEDANTIC_ALLOCATOR
-                if (_bufferPool.Contains(buffer))
-                {
-                    throw new ArgumentException("Do not Reacquire buffers which have been Released.", ibuffer.ToString());
-                }
-#endif
-                // one of two options here:
-                // 1) rent new array from ArrayPool, copy from old, release old
-                // 2) buffer segments / system.io.pipelines magic
-                // for now option 1)
-                if (newMinSizeInBytes < buffer.Capacity) return;
+            // one of two options here:
+            // 1) rent new array from ArrayPool, copy from old, release old
+            // 2) buffer segments / system.io.pipelines magic
+            // for now option 1)
+            if (newMinSizeInBytes <= buffer.Capacity) return;
 
-                byte[] bytes = _arrayPool.Rent((int) newMinSizeInBytes);
-                buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
-            }
-            else
-            {
-                throw new ArgumentException("Do not Reacquire buffers Acquired from a different Allocator!", ibuffer.ToString());
-            }
+            byte[] bytes = _arrayPool.Rent((int) newMinSizeInBytes);
+            buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
         }
 
         void IBufferAllocator.Release(IBuffer ibuffer)
