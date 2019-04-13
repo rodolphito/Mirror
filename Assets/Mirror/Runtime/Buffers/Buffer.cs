@@ -1,8 +1,11 @@
 #define MIRROR_BUFFER_CHECK_BOUNDS
 #define MIRROR_BUFFER_DYNAMIC_GROWTH
+#define MIRROR_BUFFER_WARN_ALL
+#define MIRROR_BUFFER_ZERO_ON_RESIZE
 
 using System;
 using System.Text;
+using UnityEngine;
 
 namespace Mirror.Buffers
 {
@@ -43,9 +46,21 @@ namespace Mirror.Buffers
             }
             set
             {
-                // TODO: zero-fill newly opened space
                 CheckCapacity(_length);
+#if MIRROR_BUFFER_ZERO_ON_RESIZE
+                if (_length > value)
+                {
+#if MIRROR_BUFFER_WARN_ALL
+                    Debug.LogWarning("Downsizing Buffer from " + _length + " to " + value);
+#endif
+                    for (ulong i = value; i < _length; i++)
+                    {
+                        _buffer[i] = 0;
+                    }
+                }
+#endif
                 _length = value;
+                _position = BufferUtil.Min(_position, _length);
             }
         }
 
@@ -70,7 +85,11 @@ namespace Mirror.Buffers
             if (minimum > _capacity)
             {
 #if MIRROR_BUFFER_DYNAMIC_GROWTH
-                _allocator.Reacquire(this, BufferUtil.NextPow2(minimum));
+                minimum = BufferUtil.NextPow2(minimum);
+#if MIRROR_BUFFER_WARN_ALL
+                Debug.LogWarning("Upsizing Buffer from " + _capacity + " to " + minimum);
+#endif
+                _allocator.Reacquire(this, minimum);
 #else
                 throw new ArgumentException("buffer dynamic growth is disabled");
 #endif
