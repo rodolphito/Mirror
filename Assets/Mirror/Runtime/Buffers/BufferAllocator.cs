@@ -10,8 +10,8 @@ namespace Mirror.Buffers
     public sealed class BufferAllocator : IBufferAllocator
     {
         Stack<Buffer> _bufferPool = new Stack<Buffer>();
-        ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
-        IBuffer IBufferAllocator.Acquire(ulong minSizeInBytes)
+        MemoryPool<byte> _memPool = MemoryPool<byte>.Shared;
+        IBuffer IBufferAllocator.Acquire(int minSizeInBytes)
         {
             Buffer buffer;
 #if MIRROR_BUFFER_DO_NOT_RECYCLE
@@ -27,23 +27,26 @@ namespace Mirror.Buffers
             }
 #endif
 
-            // TODO: we probably dont need to rent bytes if this is recycled.
-            byte[] bytes = _arrayPool.Rent((int) minSizeInBytes);
-            buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
+            IMemoryOwner<byte> newOwnedMem = _memPool.Rent(minSizeInBytes);
+            IMemoryOwner<byte> oldOwnedMem = buffer.Setup(this, newOwnedMem);
+            if (oldOwnedMem != null)
+            {
+                oldOwnedMem.Dispose();
+            }
 
             return buffer;
         }
 
-        internal void Reacquire(Buffer buffer, ulong newMinSizeInBytes)
+        internal void Reacquire(Buffer buffer, int newMinSizeInBytes)
         {
-            // one of two options here:
-            // 1) rent new array from ArrayPool, copy from old, release old
-            // 2) buffer segments / system.io.pipelines magic
-            // for now option 1)
             if (newMinSizeInBytes <= buffer.Capacity) return;
 
-            byte[] bytes = _arrayPool.Rent((int) newMinSizeInBytes);
-            buffer.Setup(this, bytes, 0, (ulong) bytes.Length);
+            IMemoryOwner<byte> newOwnedMem = _memPool.Rent(newMinSizeInBytes);
+            IMemoryOwner<byte> oldOwnedMem = buffer.Setup(this, newOwnedMem);
+            if (oldOwnedMem != null)
+            {
+                oldOwnedMem.Dispose();
+            }
         }
 
         void IBufferAllocator.Release(IBuffer ibuffer)
@@ -56,10 +59,15 @@ namespace Mirror.Buffers
                     throw new ArgumentException("Do not Release buffers twice.", ibuffer.ToString());
                 }
 #endif
+
+                IMemoryOwner<byte> oldOwnedMem = buffer.Setup(null, null);
+                if (oldOwnedMem != null)
+                {
+                    oldOwnedMem.Dispose();
+                }
 #if MIRROR_BUFFER_DO_NOT_RECYCLE
-                buffer.Setup(null, null, 0, 0);
-#endif
                 _bufferPool.Push(buffer);
+#endif
             }
             else
             {

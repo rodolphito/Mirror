@@ -23,30 +23,30 @@ namespace Mirror
             reader.Position = 0;
         }
 
-        #if USE_BUFFERS
+#if USE_BUFFERS
         private IBuffer reader;
 
         public NetworkReader(byte[] buffer)
         {
-            reader = BufferManager.AcquireBuffer((ulong)buffer.Length);
-            reader.WriteBytes(buffer, 0, (ulong)buffer.Length);
+            reader = BufferManager.AcquireBuffer(buffer.Length);
+            reader.WriteBytes(buffer, 0, buffer.Length);
             reader.Position = 0;
         }
 
         // 'int' is the best type for .Position. 'short' is too small if we send >32kb which would result in negative .Position
         // -> converting long to int is fine until 2GB of data (MAX_INT), so we don't have to worry about overflows here
-        public int Position { get => (int)reader.Position; set => reader.Position = (ulong) value; }
-        public int Length => (int)reader.Length;
+        public int Position { get => reader.Position; set => reader.Position = value; }
+        public int Length => reader.Length;
 
         public byte ReadByte() => reader.ReadByte();
-        public sbyte ReadSByte() => (sbyte) reader.ReadByte();
-        public char ReadChar() => (char) reader.ReadUShort();
+        public sbyte ReadSByte() => (sbyte)reader.ReadByte();
+        public char ReadChar() => (char)reader.ReadUShort();
         public bool ReadBoolean() => reader.ReadByte() == 1;
-        public short ReadInt16() => (short) reader.ReadUShort();
+        public short ReadInt16() => (short)reader.ReadUShort();
         public ushort ReadUInt16() => reader.ReadUShort();
-        public int ReadInt32() => (int) reader.ReadUInt();
+        public int ReadInt32() => (int)reader.ReadUInt();
         public uint ReadUInt32() => reader.ReadUInt();
-        public long ReadInt64() => (long) reader.ReadULong();
+        public long ReadInt64() => (long)reader.ReadULong();
         public ulong ReadUInt64() => reader.ReadULong();
         public decimal ReadDecimal() => reader.ReadDecimal();
         public float ReadSingle() => reader.ReadFloat();
@@ -54,7 +54,7 @@ namespace Mirror
 
         // note: this will throw an ArgumentException if an invalid utf8 string is sent
         // null support, see NetworkWriter
-        public string ReadString() => ReadBoolean() ? reader.ReadString(Read7BitVarInt()) : null;
+        public string ReadString() => ReadBoolean() ? reader.ReadString((int)Read7BitVarInt()) : null;
 
         uint Read7BitVarInt()
         {
@@ -72,12 +72,11 @@ namespace Mirror
 
         public byte[] ReadBytes(int count)
         {
-            ulong length = checked((ulong) count);
-            byte[] data = new byte[length];
-            if (reader.ReadBytes(data, 0, length) != length) throw new EndOfStreamException("Could not fulfill request to read a byte[] of length " + length);
+            byte[] data = new byte[count];
+            if (reader.ReadBytes(data, 0, count) != count) throw new EndOfStreamException("Could not fulfill request to read a byte[] of length " + count);
             return data;
         }
-        #else
+#else
         // cache encoding instead of creating it with BinaryWriter each time
         // 1000 readers before:  1MB GC, 30ms
         // 1000 readers after: 0.8MB GC, 18ms
@@ -119,7 +118,7 @@ namespace Mirror
             if (data.Length != count) throw new EndOfStreamException("Could not fulfill request to read a byte[] of length " + count);
             return data;
         }
-        #endif
+#endif
 
         // Use checked() to force it to throw OverflowException if data is invalid
         // null support, see NetworkWriter
@@ -197,7 +196,7 @@ namespace Mirror
             byte a8 = ReadByte();
             if (a0 == 255)
             {
-                return a1 + (((ulong)a2) << 8) + (((ulong)a3) << 16) + (((ulong)a4) << 24) + (((ulong)a5) << 32) + (((ulong)a6) << 40) + (((ulong)a7) << 48)  + (((ulong)a8) << 56);
+                return a1 + (((ulong)a2) << 8) + (((ulong)a3) << 16) + (((ulong)a4) << 24) + (((ulong)a5) << 32) + (((ulong)a6) << 40) + (((ulong)a7) << 48) + (((ulong)a8) << 56);
             }
 
             throw new IndexOutOfRangeException("ReadPackedUInt64() failure: " + a0);

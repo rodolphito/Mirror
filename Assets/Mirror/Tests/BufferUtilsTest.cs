@@ -157,22 +157,22 @@ namespace Mirror.Tests
             src = new byte[10] { 0,1,2,3,4,5,6,7,8,9 };
             dst = new byte[10];
             exp = new byte[10] { 0,1,2,3,4,5,6,7,8,9 };
-            BufferUtil.UnsafeWrite(dst, 0, src, 0, 10);
+            BufferUtilUnsafe.Write(dst, 0, src, 0, 10);
             Assert.That(dst, Is.EqualTo(exp));
 
             dst = new byte[5];
             exp = new byte[5] { 0,1,2,3,4 };
-            BufferUtil.UnsafeWrite(dst, 0, src, 0, 5);
+            BufferUtilUnsafe.Write(dst, 0, src, 0, 5);
             Assert.That(dst, Is.EqualTo(exp));
 
             dst = new byte[10];
             exp = new byte[10] { 0,0,0,0,0,0,1,2,3,4 };
-            BufferUtil.UnsafeWrite(dst, 5, src, 0, 5);
+            BufferUtilUnsafe.Write(dst, 5, src, 0, 5);
             Assert.That(dst, Is.EqualTo(exp));
 
             dst = new byte[5];
             exp = new byte[5] { 5,6,7,8,9 };
-            BufferUtil.UnsafeWrite(dst, 0, src, 5, 5);
+            BufferUtilUnsafe.Write(dst, 0, src, 5, 5);
             Assert.That(dst, Is.EqualTo(exp));
             return;
         }
@@ -183,11 +183,11 @@ namespace Mirror.Tests
             bool[] inputs = new bool[]{true, false};
             foreach (bool input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out bool output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out bool output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -199,11 +199,11 @@ namespace Mirror.Tests
             sbyte[] inputs = new sbyte[]{0,1,2,3,-1,-2,-3,126,127,-127,-128};
             foreach (sbyte input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out sbyte output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out sbyte output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -215,11 +215,11 @@ namespace Mirror.Tests
             byte[] inputs = new byte[]{0,1,2,3,253,254,255};
             foreach (byte input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out byte output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out byte output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -231,11 +231,11 @@ namespace Mirror.Tests
             short[] inputs = new short[]{0,1,2,-1,-2,257,-257,short.MaxValue,short.MinValue};
             foreach (short input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out short output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out short output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -247,11 +247,11 @@ namespace Mirror.Tests
             ushort[] inputs = new ushort[]{0,1,2,3,257,0xFFFE,0xFFFF,0xabcd};
             foreach (ushort input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out ushort output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out ushort output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -263,11 +263,11 @@ namespace Mirror.Tests
             int[] inputs = new int[]{0,1,2,-1,-2,257,-257,123456789,-123456789};
             foreach (int input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out int output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out int output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -279,11 +279,11 @@ namespace Mirror.Tests
             uint[] inputs = new uint[]{0,1,2,257,123456789,~0u,0xC0FFEE};
             foreach (uint input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out uint output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out uint output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -295,11 +295,11 @@ namespace Mirror.Tests
             long[] inputs = new long[]{0,1,2,-1,-2,257,-1233456789,123456789,0xDEAD_C0FFEE_FEEL};
             foreach (long input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out long output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out long output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -311,11 +311,11 @@ namespace Mirror.Tests
             ulong[] inputs = new ulong[]{0,1,2,257,~0ul,123456789,0xDEAD_C0FFEE_FEEL};
             foreach (ulong input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out ulong output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out ulong output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -327,11 +327,11 @@ namespace Mirror.Tests
             float[] inputs = new float[]{0f,0.1f,1f,(float)Math.PI,float.PositiveInfinity,float.NaN,1.0f/3.0f};
             foreach (float input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out float output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out float output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -343,11 +343,11 @@ namespace Mirror.Tests
             double[] inputs = new double[]{0d,0.1,Math.PI,Math.E,double.PositiveInfinity,double.NaN,1.0/3.0};
             foreach (double input in inputs)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] src = new byte[128];
-                    BufferUtil.UnsafeWrite(src, i, input);
-                    BufferUtil.UnsafeRead(out double output, src, i);
+                    BufferUtilUnsafe.Write(src, i, input);
+                    BufferUtilUnsafe.Read(out double output, src, i);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }
@@ -359,11 +359,11 @@ namespace Mirror.Tests
             string[] strings = new string[]{"","\0","abc","aBcD\n\r\t1","ß≈£∆Î·ç∂™€µ±—Ø∏","\uFFFF","˜˘¯ªº","єאקɭ๏๔є","𝕖𝕩𝕡𝕝𝕠𝕕𝕖"};
             foreach (string input in strings)
             {
-                for (ulong i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     byte[] buffer = new byte[1024];
-                    uint written = BufferUtil.UnsafeWrite(buffer, i, input);
-                    BufferUtil.UnsafeRead(out string output, buffer, i, (int) written);
+                    uint written = BufferUtilUnsafe.Write(buffer, i, input);
+                    BufferUtilUnsafe.Read(out string output, buffer, i, (int) written);
                     Assert.That(output, Is.EqualTo(input));
                 }
             }

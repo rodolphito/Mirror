@@ -99,7 +99,6 @@ namespace Mirror.Buffers
         }
         #endregion
 
-
         static BufferAllocator _defaultBufferAllocator = new BufferAllocator();
         static IBufferAllocator _bufferAllocator = _defaultBufferAllocator;
         static AcquiredRefList<NetworkWriter> _writerList = new AcquiredRefList<NetworkWriter>();
@@ -123,7 +122,7 @@ namespace Mirror.Buffers
             }
         }
 
-        public static IBuffer AcquireBuffer(ulong minSizeInBytes)
+        public static IBuffer AcquireBuffer(int minSizeInBytes)
         {
             return _bufferAllocator.Acquire(minSizeInBytes);
         }

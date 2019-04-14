@@ -3,6 +3,7 @@
     "references": [
         "Mirror",
         "Mirror.Buffers",
+        "Mirror.Buffers.Unsafe",
         "Mirror.Weaver"
     ],
     "optionalUnityReferences": [

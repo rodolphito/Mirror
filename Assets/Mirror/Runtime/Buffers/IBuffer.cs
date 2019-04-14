@@ -2,8 +2,8 @@ namespace Mirror.Buffers
 {
     public interface IBuffer
     {
-        ulong Position { get; set; }
-        ulong Length { get; set; }
+        int Position { get; set; }
+        int Length { get; set; }
         void WriteByte(byte src);
         void WriteUShort(ushort src);
         void WriteUInt(uint src);
@@ -11,7 +11,7 @@ namespace Mirror.Buffers
         void WriteFloat(float src);
         void WriteDouble(double src);
         void WriteDecimal(decimal src);
-        void WriteBytes(byte[] data, ulong offset, ulong length);
+        void WriteBytes(byte[] data, int offset, int length);
         void WriteString(string src);
         byte ReadByte();
         ushort ReadUShort();
@@ -20,8 +20,8 @@ namespace Mirror.Buffers
         float ReadFloat();
         double ReadDouble();
         decimal ReadDecimal();
-        ulong ReadBytes(byte[] data, ulong offset, ulong length);
-        string ReadString(uint length);
+        int ReadBytes(byte[] data, int offset, int length);
+        string ReadString(int length);
     }
 
     public interface IBufferSink

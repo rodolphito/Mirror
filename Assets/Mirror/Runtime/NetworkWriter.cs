@@ -18,13 +18,13 @@ namespace Mirror
             return tmpbuf;
         }
 
-        #if USE_BUFFERS
+#if USE_BUFFERS
         // create writer immediately with it's own buffer so no one can mess with it and so that we can resize it.
         private IBuffer writer;
 
         // 'int' is the best type for .Position. 'short' is too small if we send >32kb which would result in negative .Position
         // -> converting long to int is fine until 2GB of data (MAX_INT), so we don't have to worry about overflows here
-        public int Position { get => (int)writer.Position; set => writer.Position = (ulong) value; }
+        public int Position { get => writer.Position; set => writer.Position = value; }
 
         public NetworkWriter()
         {
@@ -39,7 +39,7 @@ namespace Mirror
         public byte[] ToArray()
         {
             byte[] data = new byte[writer.Length];
-            ulong position = writer.Position;
+            int position = writer.Position;
             writer.Position = 0;
             writer.ReadBytes(data, 0, writer.Length);
             writer.Position = position;
@@ -48,12 +48,12 @@ namespace Mirror
 
         // reset both the position and length of the stream,  but leaves the capacity the same
         // so that we can reuse this writer without extra allocations
-        public void SetLength(long value) => writer.Length = (ulong) value;
+        public void SetLength(int value) => writer.Length = value;
 
         public void Write(byte value) => writer.WriteByte(value);
         public void Write(sbyte value) => writer.WriteByte((byte)value);
         public void Write(char value) => writer.WriteUShort((ushort)value);
-        public void Write(bool value) => writer.WriteByte(value ? (byte) 1 : (byte) 0);
+        public void Write(bool value) => writer.WriteByte(value ? (byte)1 : (byte)0);
         public void Write(short value) => writer.WriteUShort((ushort)value);
         public void Write(ushort value) => writer.WriteUShort(value);
         public void Write(int value) => writer.WriteUInt((uint)value);
@@ -72,7 +72,7 @@ namespace Mirror
             Write(value != null);
             if (value != null)
             {
-                uint length = (uint) value.Length; //TODO: get byte length not char length
+                uint length = (uint)value.Length; //TODO: get byte length not char length
                 Write7BitVarInt(length);
                 writer.WriteString(value);
             }
@@ -82,10 +82,10 @@ namespace Mirror
         {
             while (value >= 128)
             {
-                writer.WriteByte((byte) (value | 128));
+                writer.WriteByte((byte)(value | 128));
                 value >>= 7;
             }
-            writer.WriteByte((byte) value);
+            writer.WriteByte((byte)value);
         }
 
         // for byte arrays with consistent size, where the reader knows how many to read
@@ -93,9 +93,9 @@ namespace Mirror
         public void Write(byte[] buffer, int offset, int count)
         {
             // no null check because we would need to write size info for that too (hence WriteBytesAndSize)
-            writer.WriteBytes(buffer, checked((ulong) offset), checked((ulong) count));
+            writer.WriteBytes(buffer, offset, count);
         }
-        #else
+#else
         // cache encoding instead of creating it with BinaryWriter each time
         // 1000 readers before:  1MB GC, 30ms
         // 1000 readers after: 0.8MB GC, 18ms
@@ -157,7 +157,7 @@ namespace Mirror
             // no null check because we would need to write size info for that too (hence WriteBytesAndSize)
             writer.Write(buffer, offset, count);
         }
-        #endif
+#endif
 
         // for byte arrays with dynamic size, where the reader doesn't know how many will come
         // (like an inventory with different items etc.)

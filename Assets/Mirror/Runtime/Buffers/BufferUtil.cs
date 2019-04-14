@@ -1,9 +1,7 @@
+using System;
 using System.Text;
 using System.Runtime.CompilerServices;
-
-//
-// TODO: test actual effectiveness and assembly size change of aggressive inlining (JIT likely is already doing it)
-//
+using System.Runtime.InteropServices;
 
 namespace Mirror.Buffers
 {
@@ -11,36 +9,56 @@ namespace Mirror.Buffers
     {
         const MethodImplOptions Inline = MethodImplOptions.AggressiveInlining;
         static Encoding _encoding = new UTF8Encoding(false);
-        #region Min and Max: non-branching
+
+        #region Min and Max: inlined
         [MethodImpl(Inline)]
         public static byte Min(byte x, byte y) => x < y ? x : y;
+        [MethodImpl(Inline)]
+        public static sbyte Min(sbyte x, sbyte y) => (sbyte)Min((byte)x, (byte)y);
 
         [MethodImpl(Inline)]
         public static byte Max(byte x, byte y) => x > y ? x : y;
+        [MethodImpl(Inline)]
+        public static sbyte Max(sbyte x, sbyte y) => (sbyte)Max((byte)x, (byte)y);
 
         [MethodImpl(Inline)]
         public static ushort Min(ushort x, ushort y) => x < y ? x : y;
+        [MethodImpl(Inline)]
+        public static short Min(short x, short y) => (short)Min((ushort)x, (ushort)y);
 
         [MethodImpl(Inline)]
         public static ushort Max(ushort x, ushort y) => x > y ? x : y;
+        [MethodImpl(Inline)]
+        public static short Max(short x, short y) => (short)Max((ushort)x, (ushort)y);
 
         [MethodImpl(Inline)]
         public static uint Min(uint x, uint y) => x < y ? x : y;
+        [MethodImpl(Inline)]
+        public static int Min(int x, int y) => (int)Min((uint)x, (uint)y);
 
         [MethodImpl(Inline)]
         public static uint Max(uint x, uint y) => x > y ? x : y;
+        [MethodImpl(Inline)]
+        public static int Max(int x, int y) => (int)Max((uint)x, (uint)y);
 
         [MethodImpl(Inline)]
         public static ulong Min(ulong x, ulong y) => x < y ? x : y;
+        [MethodImpl(Inline)]
+        public static long Min(long x, long y) => (long)Min((ulong)x, (ulong)y);
 
         [MethodImpl(Inline)]
         public static ulong Max(ulong x, ulong y) => x > y ? x : y;
+        [MethodImpl(Inline)]
+        public static long Max(long x, long y) => (long)Max((ulong)x, (ulong)y);
         #endregion
 
         #region NextPow2: rounding up to closest power of two
+        [MethodImpl(Inline)]
+        public static sbyte NextPow2(sbyte val) => (sbyte)NextPow2((byte)val);
+        [MethodImpl(Inline)]
         public static byte NextPow2(byte val)
         {
-            val = Max(val, 1);
+            val = Max(val, (byte)1);
             val--;
             val |= (byte)(val >> 1);
             val |= (byte)(val >> 2);
@@ -49,9 +67,12 @@ namespace Mirror.Buffers
             return val;
         }
 
+        [MethodImpl(Inline)]
+        public static short NextPow2(short val) => (short)NextPow2((ushort)val);
+        [MethodImpl(Inline)]
         public static ushort NextPow2(ushort val)
         {
-            val = Max(val, 1);
+            val = Max(val, (ushort)1);
             val--;
             val |= (ushort)(val >> 1);
             val |= (ushort)(val >> 2);
@@ -61,9 +82,12 @@ namespace Mirror.Buffers
             return val;
         }
 
+        [MethodImpl(Inline)]
+        public static int NextPow2(int val) => (int)NextPow2((uint)val);
+        [MethodImpl(Inline)]
         public static uint NextPow2(uint val)
         {
-            val = Max(val, 1);
+            val = Max(val, 1U);
             val--;
             val |= val >> 1;
             val |= val >> 2;
@@ -74,9 +98,12 @@ namespace Mirror.Buffers
             return val;
         }
 
+        [MethodImpl(Inline)]
+        public static long NextPow2(long val) => (long)NextPow2((ulong)val);
+        [MethodImpl(Inline)]
         public static ulong NextPow2(ulong val)
         {
-            val = Max(val, 1);
+            val = Max(val, 1UL);
             val--;
             val |= val >> 1;
             val |= val >> 2;
@@ -120,350 +147,102 @@ namespace Mirror.Buffers
         }
         #endregion
 
-        #region UnsafeCopy#: raw pointer based binary copy for exact sizes from 1 - 8 bytes
+        #region Write: safe binary writing using Span
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy1(byte* pdst, byte* psrc)
+        public static int Write<T>(Span<byte> dst, T src) where T : struct
         {
-            *pdst = *psrc;
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(dst), src);
+            return Unsafe.SizeOf<T>();
         }
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy2(byte* pdst, byte* psrc)
-        {
-            *(ushort*)pdst = *(ushort*)psrc;
-        }
+        public static int WriteBool(Span<byte> dst, int dstOffset, bool src) => Write(dst.Slice(dstOffset), (byte)(src ? 1 : 0));
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy3(byte* pdst, byte* psrc)
-        {
-            *(ushort*)(pdst + 0) = *(ushort*)(psrc + 0);
-            *(ushort*)(pdst + 1) = *(ushort*)(psrc + 1);
-        }
+        public static int WriteSByte(Span<byte> dst, int dstOffset, sbyte src) => Write(dst.Slice(dstOffset), src);
+        [MethodImpl(Inline)]
+        public static int WriteByte(Span<byte> dst, int dstOffset, byte src) => Write(dst.Slice(dstOffset), src);
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy4(byte* pdst, byte* psrc)
-        {
-            *(uint*)pdst = *(uint*)psrc;
-        }
+        public static int WriteShort(Span<byte> dst, int dstOffset, short src) => Write(dst.Slice(dstOffset), src);
+        [MethodImpl(Inline)]
+        public static int WriteUShort(Span<byte> dst, int dstOffset, ushort src) => Write(dst.Slice(dstOffset), src);
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy5(byte* pdst, byte* psrc)
-        {
-            *(uint*)(pdst + 0) = *(uint*)(psrc + 0);
-            *(uint*)(pdst + 1) = *(uint*)(psrc + 1);
-        }
+        public static int WriteInt(Span<byte> dst, int dstOffset, int src) => Write(dst.Slice(dstOffset), src);
+        [MethodImpl(Inline)]
+        public static int WriteUInt(Span<byte> dst, int dstOffset, uint src) => Write(dst.Slice(dstOffset), src);
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy6(byte* pdst, byte* psrc)
-        {
-            *(uint*)(pdst + 0) = *(uint*)(psrc + 0);
-            *(uint*)(pdst + 2) = *(uint*)(psrc + 2);
-        }
+        public static int WriteLong(Span<byte> dst, int dstOffset, long src) => Write(dst.Slice(dstOffset), src);
+        [MethodImpl(Inline)]
+        public static int WriteULong(Span<byte> dst, int dstOffset, ulong src) => Write(dst.Slice(dstOffset), src);
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy7(byte* pdst, byte* psrc)
-        {
-            *(uint*)(pdst + 0) = *(uint*)(psrc + 0);
-            *(uint*)(pdst + 3) = *(uint*)(psrc + 3);
-        }
+        public static int WriteFloat(Span<byte> dst, int dstOffset, float src) => Write(dst.Slice(dstOffset), src);
 
         [MethodImpl(Inline)]
-        public static unsafe void UnsafeCopy8(byte* pdst, byte* psrc)
+        public static int WriteDouble(Span<byte> dst, int dstOffset, double src) => Write(dst.Slice(dstOffset), src);
+
+        [MethodImpl(Inline)]
+        public static int WriteDecimal(Span<byte> dst, int dstOffset, decimal src) => Write(dst.Slice(dstOffset), src);
+
+        [MethodImpl(Inline)]
+        public static int WriteBytes(Span<byte> dst, int dstOffset, ReadOnlySpan<byte> src, int srcOffset, int byteLength)
         {
-            *(ulong*)pdst = *(ulong*)psrc;
+            if (src.Slice(srcOffset, byteLength).TryCopyTo(dst))
+            {
+                return byteLength;
+            }
+            return 0;
         }
         #endregion
 
-        #region UnsafeWrite: unsafe binary writing using fixed pinning
+        #region Read: safe binary reading using span
         [MethodImpl(Inline)]
-        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, bool boolSrc) => UnsafeWrite(dst, dstOffset, (byte)(boolSrc ? 1 : 0));
-
-        [MethodImpl(Inline)]
-        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, sbyte sbyteSrc) => UnsafeWrite(dst, dstOffset, (byte)sbyteSrc);
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, byte byteSrc)
+        public static int Read<T>(out T dst, Span<byte> src) where T : struct
         {
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                UnsafeCopy1(pdst, &byteSrc);
-            }
-            return sizeof(byte);
+            dst = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(src));
+            return Unsafe.SizeOf<T>();
         }
 
         [MethodImpl(Inline)]
-        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, short shortSrc) => UnsafeWrite(dst, dstOffset, (ushort)shortSrc);
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, ushort ushortSrc)
-        {
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                UnsafeCopy2(pdst, (byte*)&ushortSrc);
-            }
-            return sizeof(ushort);
-        }
+        public static int ReadBool(out bool dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, int intSrc) => UnsafeWrite(dst, dstOffset, (uint)intSrc);
+        public static int ReadSByte(out sbyte dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, uint uintSrc)
-        {
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                UnsafeCopy4(pdst, (byte*)&uintSrc);
-            }
-            return sizeof(uint);
-        }
+        public static int ReadByte(out byte dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static uint UnsafeWrite(byte[] dst, ulong dstOffset, long longSrc) => UnsafeWrite(dst, dstOffset, (ulong)longSrc);
+        public static int ReadShort(out short dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, ulong ulongSrc)
-        {
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                UnsafeCopy8(pdst, (byte*)&ulongSrc);
-            }
-            return sizeof(ulong);
-        }
+        public static int ReadUShort(out ushort dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, float floatSrc)
-        {
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                UnsafeCopy4(pdst, (byte*)&floatSrc);
-            }
-            return sizeof(float);
-        }
+        public static int ReadInt(out int dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
+        [MethodImpl(Inline)]
+        public static int ReadUInt(out uint dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, double doubleSrc)
-        {
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                UnsafeCopy8(pdst, (byte*)&doubleSrc);
-            }
-            return sizeof(double);
-        }
+        public static int ReadLong(out long dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
+        [MethodImpl(Inline)]
+        public static int ReadULong(out ulong dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, decimal decimalSrc)
-        {
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                UnsafeCopy4(pdst+12, (byte*)&decimalSrc+0);
-                UnsafeCopy4(pdst+ 8, (byte*)&decimalSrc+4);
-                UnsafeCopy8(pdst+ 0, (byte*)&decimalSrc+8);
-            }
-            return sizeof(decimal);
-        }
+        public static int ReadFloat(out float dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeWrite(byte[] dst, ulong dstOffset, string stringSrc)
-        {
-            uint written = 0;
-            fixed (char* psrc = stringSrc)
-            fixed (byte* pdst = &dst[dstOffset])
-            {
-                written = (uint)_encoding.GetBytes(psrc, stringSrc.Length, pdst, dst.Length - (int)dstOffset);
-            }
-            return written;
-        }
+        public static int ReadDouble(out double dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static unsafe ulong UnsafeWrite(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, ulong byteLength)
-        {
-            ulong longWriteLimit = byteLength & ~7ul;
-            fixed (byte* psrc = src)
-            fixed (byte* pdst = dst)
-            {
-                // write anything over 8 bytes as a series of long*
-                for (ulong cursor = 0; cursor < longWriteLimit; cursor += sizeof(long))
-                {
-                    UnsafeCopy8(pdst + dstOffset + cursor, psrc + srcOffset + cursor);
-                }
-
-                // write anything remaining under 8 bytes
-                switch (byteLength & 7ul)
-                {
-                    case 0:
-                        break;
-                    case 1:
-                        UnsafeCopy1(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
-                        break;
-                    case 2:
-                        UnsafeCopy2(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
-                        break;
-                    case 3:
-                        UnsafeCopy3(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
-                        break;
-                    case 4:
-                        UnsafeCopy4(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
-                        break;
-                    case 5:
-                        UnsafeCopy5(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
-                        break;
-                    case 6:
-                        UnsafeCopy6(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
-                        break;
-                    case 7:
-                        UnsafeCopy7(pdst + dstOffset + longWriteLimit, psrc + srcOffset + longWriteLimit);
-                        break;
-                }
-            }
-            return byteLength;
-        }
-        #endregion
-
-        #region UnsafeRead: unsafe binary reading using fixed pinning
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out bool boolDst, byte[] src, ulong srcOffset)
-        {
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                boolDst = (*psrc == 0) ? false : true;
-            }
-            return sizeof(byte);
-        }
+        public static int ReadDecimal(out decimal dst, Span<byte> src, int srcOffset) => Read(out dst, src.Slice(srcOffset));
 
         [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out sbyte sbyteDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &sbyteDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy1((byte*)pdst, psrc);
-            }
-            return sizeof(sbyte);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out byte byteDst, byte[] src, ulong srcOffset)
-        {
-            fixed (byte* pdst = &byteDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy1(pdst, psrc);
-            }
-            return sizeof(byte);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out short shortDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &shortDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy2((byte*)pdst, psrc);
-            }
-            return sizeof(short);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out ushort ushortDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &ushortDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy2((byte*)pdst, psrc);
-            }
-            return sizeof(ushort);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out int intSrc, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &intSrc)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy4((byte*)pdst, psrc);
-            }
-            return sizeof(int);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out uint uintDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &uintDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy4((byte*)pdst, psrc);
-            }
-            return sizeof(uint);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out long longDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &longDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy8((byte*)pdst, psrc);
-            }
-            return sizeof(long);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out ulong ulongDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &ulongDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy8((byte*)pdst, psrc);
-            }
-            return sizeof(ulong);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out float floatDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &floatDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy4((byte*)pdst, psrc);
-            }
-            return sizeof(float);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out double doubleDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &doubleDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy8((byte*)pdst, psrc);
-            }
-            return sizeof(double);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out decimal decimalDst, byte[] src, ulong srcOffset)
-        {
-            fixed (void* pdst = &decimalDst)
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                UnsafeCopy4((byte*)pdst+0, psrc+12);
-                UnsafeCopy4((byte*)pdst+4, psrc+ 8);
-                UnsafeCopy8((byte*)pdst+8, psrc+ 0);
-            }
-            return sizeof(decimal);
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe uint UnsafeRead(out string stringDst, byte[] src, ulong srcOffset, int byteLength)
-        {
-            fixed (byte* psrc = &src[srcOffset])
-            {
-                stringDst = _encoding.GetString(psrc, byteLength);
-            }
-            return (uint)byteLength;
-        }
-
-        [MethodImpl(Inline)]
-        public static unsafe ulong UnsafeRead(byte[] dst, ulong dstOffset, byte[] src, ulong srcOffset, ulong byteLength) => UnsafeWrite(src, srcOffset, dst, dstOffset, byteLength);
+        public static int ReadBytes(Span<byte> dst, int dstOffset, Span<byte> src, int srcOffset, int byteLength) => WriteBytes(src, srcOffset, dst, dstOffset, byteLength);
         #endregion
 
         [MethodImpl(Inline)]
-        internal static uint StringByteCount(string stringSrc) => (uint) _encoding.GetByteCount(stringSrc);
+        internal static int StringByteCount(string stringSrc) => _encoding.GetByteCount(stringSrc);
     }
 }

@@ -2,7 +2,7 @@ namespace Mirror.Buffers
 {
     public interface IBufferAllocator
     {
-        IBuffer Acquire(ulong minSizeInBytes);
+        IBuffer Acquire(int minSizeInBytes);
         void Release(IBuffer buffer);
     }
 }
