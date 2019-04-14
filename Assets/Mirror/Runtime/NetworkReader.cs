@@ -54,7 +54,21 @@ namespace Mirror
 
         // note: this will throw an ArgumentException if an invalid utf8 string is sent
         // null support, see NetworkWriter
-        public string ReadString() => ReadBoolean() ? reader.ReadString(reader.ReadUInt()) : null;
+        public string ReadString() => ReadBoolean() ? reader.ReadString(Read7BitVarInt()) : null;
+
+        uint Read7BitVarInt()
+        {
+            uint value = 0;
+            int shift = 0;
+            byte b;
+            do
+            {
+                b = reader.ReadByte();
+                value |= (b & 127u) << shift;
+                shift += 7;
+            } while ((b >> 7) != 0 && shift < 32);
+            return value;
+        }
 
         public byte[] ReadBytes(int count)
         {
